@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Katedra AI - Administrasi Selesai, Inspirasi Dimulai.
 
-## Getting Started
+![Katedra Showcase](/public/images/carousel/dashboard.webp)
 
-First, run the development server:
+**Katedra** adalah platform AI premium yang dirancang khusus untuk pendidik di Indonesia. Kami membantu guru menyusun perangkat ajar (Modul Ajar, ATP, CP) Kurikulum Merdeka dengan kecepatan tinggi dan presisi pedagogis, menghemat waktu administrasi hingga 90% sehingga guru dapat kembali fokus pada siswa.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Fitur Utama
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+-   **AI Context-Aware**: Editor pintar yang memahami konteks pedagogis, bukan sekadar perbaikan typo.
+-   **Analisis Kurikulum Real-time**: Selalu terupdate dengan regulasi terbaru Kemendikbudristek.
+-   **Multi-Format Export**: Unduh dokumen dalam format PDF atau Docx yang rapi dan siap cetak.
+-   **Premium UI/UX**: Antarmuka modern dengan gaya "Luxury Glassmorphism" yang memanjakan mata.
+-   **Manajemen Terpusat**: Dashboard untuk menyimpan dan mengatur seluruh arsip dokumen ajar.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Teknologi
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Project ini dibangun dengan **Next.js 14** dan stack teknologi modern untuk performa dan estetika maksimal:
 
-## Learn More
+-   **Framework**: Next.js 14 (App Router)
+-   **Styling**: Tailwind CSS + Shadcn UI
+-   **Language**: TypeScript
+-   **Animation**: Framer Motion
+-   **Smooth Scroll**: Lenis
+-   **Font**: Playfair Display (Serif) & Inter (Sans)
+-   **Deployment**: Railway / Vercel ready
 
-To learn more about Next.js, take a look at the following resources:
+## 📸 Identitas Visual
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Katedra menggunakan sistem desain **"Scholastic Luxury"**:
+-   **Warna Utama**: British Racing Green (`#011c15`) & Warm Alabaster (`#fbfaf8`).
+-   **Accent**: Metallic Gold (`#d4af37`).
+-   **Filosofi**: Menggabungkan ketenangan perpustakaan klasik dengan kecanggihan teknologi masa depan.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🏁 Cara Menjalankan (Local)
 
-## Deploy on Vercel
+1.  **Clone Repository**
+    ```bash
+    git clone https://github.com/Pixel-XXhan/RPP-Modul.git
+    cd RPP-Modul
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3.  **Jalankan Development Server**
+    ```bash
+    npm run dev
+    ```
+    Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
+
+## 📦 Deployment (Railway)
+
+Project ini dikonfigurasi untuk deployment mudah di Railway:
+
+1.  Push code ke GitHub.
+2.  Buka dashboard Railway -> New Project -> Deploy from GitHub repo.
+3.  Railway akan otomatis mendeteksi Next.js dan melakukan build.
+4.  **Done!** Aplikasi Anda live.
+
+No extra configuration needed (Zero Config Deployment).
+
+## 📄 Lisensi
+
+Hak Cipta © 2026 Katedra. All Rights Reserved.
+Dibuat dengan ❤️ oleh Arief Fajar.
