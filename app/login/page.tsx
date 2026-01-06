@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -54,8 +53,8 @@ export default function LoginPage() {
 
             {/* Right Side: Form */}
             <motion.div
-                initial={{ opacity: 0, opacity: 0 }}
-                animate={{ opacity: 1, opacity: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 className="flex items-center justify-center p-8 md:p-12 lg:p-20 bg-background relative"
             >
                 {/* Mobile Background Texture */}
@@ -176,6 +175,7 @@ export default function LoginPage() {
                         <Link href="/register" className="font-bold text-primary hover:text-accent transition-colors">
                             Daftar Gratis
                         </Link>
+                    </p>
                 </div>
             </motion.div>
         </main>
