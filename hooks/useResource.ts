@@ -39,10 +39,13 @@ export function useResource<T extends { id: string }>({
         setError(null)
         try {
             const result = await api.get<T[]>(endpoint, params as Record<string, string | number | undefined>)
-            setData(result)
-            setTotal(result.length)
+            // Ensure result is always an array
+            const dataArray = Array.isArray(result) ? result : []
+            setData(dataArray)
+            setTotal(dataArray.length)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
+            setData([]) // Reset to empty array on error
         } finally {
             setLoading(false)
         }
