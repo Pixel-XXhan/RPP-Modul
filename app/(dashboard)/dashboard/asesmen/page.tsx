@@ -94,7 +94,7 @@ function AsesmenCard({
 }
 
 export default function AsesmenPage() {
-    const { data: asesmenList, loading, error, fetchAll, remove } = useAsesmen();
+    const { data: asesmenList = [], loading, error, fetchAll, remove } = useAsesmen();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<"all" | "formatif" | "sumatif">("all");
 

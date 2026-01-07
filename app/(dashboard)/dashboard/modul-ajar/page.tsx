@@ -147,7 +147,7 @@ function ModulCard({
 }
 
 export default function ModulAjarPage() {
-    const { data: moduls, loading, error, fetchAll, remove } = useModulAjar();
+    const { data: moduls = [], loading, error, fetchAll, remove } = useModulAjar();
     const { exportDocument } = useExport();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "published" | "draft">("all");

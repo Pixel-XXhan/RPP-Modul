@@ -81,7 +81,7 @@ function ATPCard({
 }
 
 export default function ATPPage() {
-    const { data: atpList, loading, error, fetchAll, remove } = useATP();
+    const { data: atpList = [], loading, error, fetchAll, remove } = useATP();
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {

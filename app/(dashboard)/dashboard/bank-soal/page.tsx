@@ -91,7 +91,7 @@ function SoalCard({
 }
 
 export default function BankSoalPage() {
-    const { data: soalList, loading, error, fetchAll, remove, statistics, fetchStatistics } = useBankSoal();
+    const { data: soalList = [], loading, error, fetchAll, fetchStatistics, remove, statistics } = useBankSoal();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<"all" | TipeSoal>("all");
     const [filterDifficulty, setFilterDifficulty] = useState<"all" | TingkatKesulitan>("all");

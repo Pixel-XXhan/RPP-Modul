@@ -90,7 +90,7 @@ function SilabusCard({
 }
 
 export default function SilabusPage() {
-    const { data: silabusList, loading, error, fetchAll, remove } = useSilabus();
+    const { data: silabusList = [], loading, error, fetchAll, remove } = useSilabus();
     const { exportDocument } = useExport();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "published" | "draft">("all");

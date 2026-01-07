@@ -146,7 +146,7 @@ function RPPCard({
 }
 
 export default function RPPPage() {
-    const { data: rpps, loading, error, fetchAll, remove } = useRPP();
+    const { data: rpps = [], loading, error, fetchAll, remove } = useRPP();
     const { exportDocument } = useExport();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "published" | "draft">("all");
