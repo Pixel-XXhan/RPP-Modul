@@ -5,11 +5,39 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
+    const { signIn, signInWithGoogle, signInWithFacebook, loading: authLoading } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+
+        const { error } = await signIn(email, password);
+
+        if (error) {
+            setError(error.message || "Login gagal. Periksa email dan password Anda.");
+        }
+
+        setIsLoading(false);
+    };
+
+    const handleGoogleLogin = async () => {
+        await signInWithGoogle();
+    };
+
+    const handleFacebookLogin = async () => {
+        await signInWithFacebook();
+    };
 
     return (
         <main className="min-h-screen grid lg:grid-cols-2">
@@ -81,13 +109,22 @@ export default function LoginPage() {
                         <p className="text-muted-foreground">Masuk untuk melanjutkan penyusunan modul ajar Anda.</p>
                     </div>
 
-                    <form className="space-y-6">
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                            <p className="text-sm text-red-800">{error}</p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
                                 <Input
                                     type="email"
                                     placeholder="nama@sekolah.sch.id"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
                                     className="h-12 rounded-xl bg-white/50 border-neutral-200 focus:ring-primary"
                                 />
                             </div>
@@ -102,6 +139,9 @@ export default function LoginPage() {
                                     <Input
                                         type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
                                         className="h-12 rounded-xl bg-white/50 border-neutral-200 focus:ring-primary pr-10"
                                     />
                                     <button
@@ -116,7 +156,6 @@ export default function LoginPage() {
                         </div>
 
                         <div className="flex items-center space-x-2">
-                            {/* Checkbox Component needs to be available, if not falling back to simple input */}
                             <input type="checkbox" id="remember" className="rounded border-gray-300 text-primary focus:ring-primary" />
                             <label
                                 htmlFor="remember"
@@ -126,8 +165,21 @@ export default function LoginPage() {
                             </label>
                         </div>
 
-                        <Button className="w-full h-12 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-lg shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-                            Masuk Sekarang <ArrowRight size={18} className="ml-2" />
+                        <Button
+                            type="submit"
+                            disabled={isLoading || authLoading}
+                            className="w-full h-12 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-lg shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 size={18} className="mr-2 animate-spin" />
+                                    Masuk...
+                                </>
+                            ) : (
+                                <>
+                                    Masuk Sekarang <ArrowRight size={18} className="ml-2" />
+                                </>
+                            )}
                         </Button>
                     </form>
 
@@ -141,7 +193,12 @@ export default function LoginPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Button variant="outline" className="h-12 rounded-xl border-neutral-200 hover:bg-neutral-50 font-semibold text-foreground">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleGoogleLogin}
+                            className="h-12 rounded-xl border-neutral-200 hover:bg-neutral-50 font-semibold text-foreground"
+                        >
                             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                                 <path
                                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -162,7 +219,12 @@ export default function LoginPage() {
                             </svg>
                             Google
                         </Button>
-                        <Button variant="outline" className="h-12 rounded-xl border-neutral-200 hover:bg-neutral-50 font-semibold text-foreground">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleFacebookLogin}
+                            className="h-12 rounded-xl border-neutral-200 hover:bg-neutral-50 font-semibold text-foreground"
+                        >
                             <svg className="mr-2 h-5 w-5 text-[#1877F2] fill-current" viewBox="0 0 24 24">
                                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.79-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                             </svg>

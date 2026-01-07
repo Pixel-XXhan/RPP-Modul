@@ -124,33 +124,39 @@
   }
 
   .dark {
-    --background: #022C22;
-    --foreground: #FDFCF8;
+    --background: #0a0a0a;
+    --foreground: #fafafa;
 
-    --card: #064E3B;
-    --card-foreground: #FDFCF8;
+    --card: #171717;
+    --card-foreground: #fafafa;
 
-    --popover: #064E3B;
-    --popover-foreground: #FDFCF8;
+    --popover: #171717;
+    --popover-foreground: #fafafa;
 
-    --primary: #FDFCF8;
-    --primary-foreground: #064E3B;
+    --primary: #10b981;
+    --primary-foreground: #022C22;
 
-    --secondary: #064E3B;
-    --secondary-foreground: #FDFCF8;
+    --secondary: #262626;
+    --secondary-foreground: #fafafa;
 
-    --muted: #064E3B;
-    --muted-foreground: #9CA3AF;
+    --muted: #262626;
+    --muted-foreground: #a3a3a3;
 
     --accent: #D4AF37;
     --accent-foreground: #022C22;
 
-    --destructive: #7F1D1D;
-    --destructive-foreground: #FDFCF8;
+    --destructive: #dc2626;
+    --destructive-foreground: #fafafa;
 
-    --border: #064E3B;
-    --input: #064E3B;
-    --ring: #D4AF37;
+    --border: #262626;
+    --input: #262626;
+    --ring: #10b981;
+
+    --chart-1: #10b981;
+    --chart-2: #D4AF37;
+    --chart-3: #06b6d4;
+    --chart-4: #f59e0b;
+    --chart-5: #8b5cf6;
   }
 }
 
@@ -183,20 +189,63 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Hidden Scrollbar (User Request) */
-::-webkit-scrollbar {
-  display: none;
+/* Custom Scrollbar - Thin for Sidebar */
+.scrollbar-thin {
+  scrollbar-width: thin;
 }
 
-* {
+.scrollbar-thin::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Hide scrollbar on main body but keep functionality */
+body {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Selection Styles */
 ::selection {
   background-color: theme('colors.primary.DEFAULT');
   color: theme('colors.accent.DEFAULT');
+}
+
+/* Smooth transitions for dark mode */
+* {
+  transition-property: background-color, border-color, color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0ms;
+}
+
+/* Only animate when user has no preference for reduced motion */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition-duration: 150ms;
+  }
 }

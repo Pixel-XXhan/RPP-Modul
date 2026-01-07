@@ -41,28 +41,44 @@ export function Navbar() {
                 transition={{ duration: 0.6, ease: "circOut" }}
                 className="fixed top-6 left-1/2 z-50 w-full max-w-5xl px-4 pointer-events-none"
             >
-                <div
-                    className={cn(
-                        "pointer-events-auto relative w-full flex items-center justify-between rounded-full bg-white/90 backdrop-blur-xl border border-white/20 shadow-lg shadow-black/5 transition-all duration-500 will-change-transform",
-                        isScrolled ? "px-5 py-2.5 mx-auto max-w-4xl" : "px-8 py-4 mx-auto max-w-5xl"
-                    )}
+                <motion.div
+                    animate={{
+                        paddingLeft: isScrolled ? 20 : 32,
+                        paddingRight: isScrolled ? 20 : 32,
+                        paddingTop: isScrolled ? 10 : 16,
+                        paddingBottom: isScrolled ? 10 : 16,
+                        maxWidth: isScrolled ? "56rem" : "64rem",
+                    }}
+                    transition={{
+                        duration: 0.4,
+                        ease: [0.4, 0, 0.2, 1]
+                    }}
+                    className="pointer-events-auto relative w-full flex items-center justify-between rounded-full bg-white/90 backdrop-blur-xl border border-white/20 shadow-lg shadow-black/5 mx-auto"
                 >
                     {/* 1. Logo (Left) */}
                     <Link href="/" className="flex items-center gap-1 shrink-0 z-10 group relative">
-                        <span className="font-serif text-xl font-bold text-primary tracking-tight group-hover:opacity-80 transition-opacity">
+                        <motion.span
+                            animate={{
+                                fontSize: isScrolled ? "1.125rem" : "1.25rem"
+                            }}
+                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                            className="font-serif font-bold text-primary tracking-tight group-hover:opacity-80 transition-opacity"
+                        >
                             KATEDRA<span className="text-accent">.</span>
-                        </span>
+                        </motion.span>
                     </Link>
 
                     {/* 2. Desktop Links (ABSOLUTE CENTER) */}
-                    {/* Using absolute positioning to allow the Logo and CTA to have different widths without pushing the center off-balance. */}
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-0">
                         <div className="flex items-center gap-1">
                             {links.map((link) => (
                                 <Link
                                     key={link.name}
                                     href={link.href}
-                                    className="text-sm font-medium text-muted-foreground hover:text-primary px-4 py-2 rounded-full hover:bg-neutral-100/50 transition-all duration-300"
+                                    className={cn(
+                                        "font-medium text-muted-foreground hover:text-primary px-4 py-2 rounded-full hover:bg-neutral-100/50 transition-all duration-300",
+                                        isScrolled ? "text-xs" : "text-sm"
+                                    )}
                                 >
                                     {link.name}
                                 </Link>
@@ -72,11 +88,17 @@ export function Navbar() {
 
                     {/* 3. CTA (Right) */}
                     <div className="hidden md:flex items-center gap-3 shrink-0 z-10">
-                        <Link href="/login" className="text-sm font-medium text-primary hover:text-accent transition-colors">
+                        <Link href="/login" className={cn(
+                            "font-medium text-primary hover:text-accent transition-colors",
+                            isScrolled ? "text-xs" : "text-sm"
+                        )}>
                             Masuk
                         </Link>
                         <Link href="/login">
-                            <Button size="sm" className="rounded-full bg-accent hover:bg-yellow-500 text-primary-dark font-bold px-5 shadow-md shadow-accent/20">
+                            <Button
+                                size={isScrolled ? "sm" : "default"}
+                                className="rounded-full bg-accent hover:bg-yellow-500 text-primary-dark font-bold px-5 shadow-md shadow-accent/20 transition-all duration-300"
+                            >
                                 Mulai Gratis
                             </Button>
                         </Link>
@@ -89,9 +111,9 @@ export function Navbar() {
                     >
                         {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
                     </button>
-                </div>
+                </motion.div>
 
-                {/* Mobile Menu Dropdown (Modern) */}
+                {/* Mobile Menu Dropdown */}
                 <AnimatePresence>
                     {isMobileOpen && (
                         <motion.div
@@ -115,12 +137,16 @@ export function Navbar() {
                                 ))}
                                 <div className="h-px bg-neutral-100 my-2 mx-2" />
                                 <div className="grid grid-cols-2 gap-3 p-2">
-                                    <Button variant="outline" className="w-full rounded-xl border-neutral-200 font-semibold h-12">
-                                        Masuk
-                                    </Button>
-                                    <Button className="w-full rounded-xl bg-primary text-white font-bold h-12 shadow-lg shadow-primary/20">
-                                        Mulai
-                                    </Button>
+                                    <Link href="/login">
+                                        <Button variant="outline" className="w-full rounded-xl border-neutral-200 font-semibold h-12">
+                                            Masuk
+                                        </Button>
+                                    </Link>
+                                    <Link href="/register">
+                                        <Button className="w-full rounded-xl bg-primary text-white font-bold h-12 shadow-lg shadow-primary/20">
+                                            Mulai
+                                        </Button>
+                                    </Link>
                                 </div>
                             </div>
                         </motion.div>

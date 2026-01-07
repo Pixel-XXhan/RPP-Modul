@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
-import { SmoothScroll } from "@/components/providers/SmoothScroll";
-import { NoiseOverlay } from "@/components/ui/noise-overlay";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { AuthProvider } from "@/hooks/useAuth";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -27,17 +25,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${playfair.variable} antialiased`}
       >
-        <SmoothScroll>
-          <NoiseOverlay />
-          <Navbar />
-          {children}
-          <Footer />
-        </SmoothScroll>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+

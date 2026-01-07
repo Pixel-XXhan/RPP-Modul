@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import {
@@ -9,6 +10,21 @@ import {
     IconTableColumn,
 } from "@tabler/icons-react";
 import { Sparkles, Zap, BrainCircuit, LayoutDashboard } from "lucide-react";
+
+// Reusable optimized image header component
+const OptimizedImageHeader = ({ src, alt, gradient }: { src: string; alt: string; gradient: string }) => (
+    <div className="relative w-full h-full min-h-[12rem] rounded-xl overflow-hidden border border-neutral-100 dark:border-white/10">
+        <div className={`absolute inset-0 ${gradient} -z-10`} />
+        <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+        />
+    </div>
+);
 
 export function ValueProp() {
     return (
@@ -67,26 +83,16 @@ export function ValueProp() {
     );
 }
 
-const Skeleton = ({ bgClass = "bg-neutral-100" }) => (
-    <div className={`flex flex-1 w-full h-full min-h-[6rem] rounded-xl ${bgClass} border border-transparent dark:border-white/10 relative overflow-hidden transition-all duration-500 group-hover:border-accent/20`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 opacity-50" />
-    </div>
-);
-
 const items = [
     {
         title: "AI Pedagogis Context-Aware",
         description: "Bukan sekadar text-generator. AI kami memahami Capaian Pembelajaran (CP) dan Alur Tujuan Pembelajaran (ATP) secara mendalam.",
         header: (
-            <div className="relative w-full h-full min-h-[12rem] rounded-xl overflow-hidden border border-neutral-100 dark:border-white/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 -z-10" />
-                {/* Using standard img for local assets to ensure immediate render or Next Image if preferred */}
-                <img
-                    src="/images/keunggulan/pedacontext.jpg"
-                    alt="AI Pedagogis Context-Aware"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-            </div>
+            <OptimizedImageHeader
+                src="/images/keunggulan/pedacontext.jpg"
+                alt="AI Pedagogis Context-Aware"
+                gradient="bg-gradient-to-br from-emerald-50 to-teal-50"
+            />
         ),
         className: "md:col-span-2",
         icon: <BrainCircuit className="h-4 w-4 text-emerald-600" />,
@@ -95,14 +101,11 @@ const items = [
         title: "Format Validasi Otomatis",
         description: "Dokumen yang dihasilkan otomatis lolos validasi format standar pengawas sekolah.",
         header: (
-            <div className="relative w-full h-full min-h-[12rem] rounded-xl overflow-hidden border border-neutral-100 dark:border-white/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-yellow-50 -z-10" />
-                <img
-                    src="/images/keunggulan/validasi.jpg"
-                    alt="Format Validasi Otomatis"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-            </div>
+            <OptimizedImageHeader
+                src="/images/keunggulan/validasi.jpg"
+                alt="Format Validasi Otomatis"
+                gradient="bg-gradient-to-br from-amber-50 to-yellow-50"
+            />
         ),
         className: "md:col-span-1",
         icon: <IconSignature className="h-4 w-4 text-amber-600" />,
@@ -111,14 +114,11 @@ const items = [
         title: "Dashboard Intuitif",
         description: "Antarmuka drag-and-drop yang memudahkan penyesuaian materi ajar.",
         header: (
-            <div className="relative w-full h-full min-h-[12rem] rounded-xl overflow-hidden border border-neutral-100 dark:border-white/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 -z-10" />
-                <img
-                    src="/images/keunggulan/dashboard.jpg"
-                    alt="Dashboard Intuitif"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-            </div>
+            <OptimizedImageHeader
+                src="/images/keunggulan/dashboard.jpg"
+                alt="Dashboard Intuitif"
+                gradient="bg-gradient-to-br from-blue-50 to-indigo-50"
+            />
         ),
         className: "md:col-span-1",
         icon: <LayoutDashboard className="h-4 w-4 text-blue-600" />,
@@ -127,14 +127,11 @@ const items = [
         title: "Export ke PDF & Docx",
         description: "Unduh hasil kerja Anda dalam format yang siap cetak atau siap edit.",
         header: (
-            <div className="relative w-full h-full min-h-[12rem] rounded-xl overflow-hidden border border-neutral-100 dark:border-white/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-50 to-pink-50 -z-10" />
-                <img
-                    src="/images/keunggulan/export.jpg"
-                    alt="Export ke PDF & Docx"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-            </div>
+            <OptimizedImageHeader
+                src="/images/keunggulan/export.jpg"
+                alt="Export ke PDF & Docx"
+                gradient="bg-gradient-to-br from-rose-50 to-pink-50"
+            />
         ),
         className: "md:col-span-2",
         icon: <IconFileBroken className="h-4 w-4 text-rose-600" />,

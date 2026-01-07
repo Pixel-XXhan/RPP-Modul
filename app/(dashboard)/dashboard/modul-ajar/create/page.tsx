@@ -1,0 +1,463 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    ArrowLeft,
+    ArrowRight,
+    Sparkles,
+    BookOpen,
+    Target,
+    Users,
+    Clock,
+    Save,
+    FileText,
+    CheckCircle2,
+    Loader2,
+} from "lucide-react";
+import { useModulAjar } from "@/hooks/useModulAjar";
+
+const steps = [
+    { id: 1, title: "Informasi Dasar", icon: BookOpen },
+    { id: 2, title: "Capaian Pembelajaran", icon: Target },
+    { id: 3, title: "Tujuan & Materi", icon: FileText },
+    { id: 4, title: "Kegiatan", icon: Users },
+    { id: 5, title: "Review & Generate", icon: Sparkles },
+];
+
+export default function CreateModulAjarPage() {
+    const router = useRouter();
+    const { create, streaming, generateWithStreaming, loading, error } = useModulAjar();
+    const [currentStep, setCurrentStep] = useState(1);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedContent, setGeneratedContent] = useState("");
+    const [formData, setFormData] = useState({
+        title: "",
+        subject: "",
+        grade: "",
+        semester: "",
+        duration: "",
+        capaianPembelajaran: "",
+        tujuanPembelajaran: "",
+        materi: "",
+        pendahuluan: "",
+        inti: "",
+        penutup: "",
+    });
+
+    const handleInputChange = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSaveDraft = async () => {
+        try {
+            const result = await create({
+                judul: formData.title || "Draft Modul Ajar",
+                kelas: formData.grade,
+                topik: formData.subject,
+                alokasi_waktu: parseInt(formData.duration) || undefined,
+                capaian_pembelajaran: formData.capaianPembelajaran ? [formData.capaianPembelajaran] : undefined,
+                tujuan_pembelajaran: formData.tujuanPembelajaran ? [formData.tujuanPembelajaran] : undefined,
+                status: 'draft',
+            });
+            router.push(`/dashboard/modul-ajar/${result.id}`);
+        } catch (err) {
+            console.error("Failed to save draft:", err);
+        }
+    };
+
+    const handleGenerate = async () => {
+        setIsGenerating(true);
+        setGeneratedContent("");
+
+        try {
+            await generateWithStreaming({
+                mapel: formData.subject,
+                topik: formData.materi || formData.title,
+                kelas: formData.grade,
+                alokasi_waktu: parseInt(formData.duration) || 4,
+                save_to_db: true,
+            });
+        } catch (err) {
+            console.error("Generation failed:", err);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // Show streaming content if available
+    const displayContent = streaming.content || generatedContent;
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-8">
+            {/* Header */}
+            <div>
+                <Link
+                    href="/dashboard/modul-ajar"
+                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
+                >
+                    <ArrowLeft size={16} className="mr-2" />
+                    Kembali ke Daftar Modul
+                </Link>
+                <h1 className="text-2xl md:text-3xl font-bold font-serif text-foreground">Buat Modul Ajar Baru</h1>
+                <p className="text-muted-foreground mt-1">Lengkapi informasi di bawah untuk menghasilkan modul ajar dengan AI</p>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="bg-card rounded-2xl border border-border p-4 overflow-x-auto">
+                <div className="flex items-center justify-between min-w-[600px]">
+                    {steps.map((step, index) => {
+                        const Icon = step.icon;
+                        const isActive = currentStep === step.id;
+                        const isCompleted = currentStep > step.id;
+
+                        return (
+                            <div key={step.id} className="flex items-center">
+                                <button
+                                    onClick={() => setCurrentStep(step.id)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isActive
+                                        ? "bg-primary text-white"
+                                        : isCompleted
+                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        }`}
+                                >
+                                    {isCompleted ? (
+                                        <CheckCircle2 size={18} />
+                                    ) : (
+                                        <Icon size={18} />
+                                    )}
+                                    <span className="font-medium text-sm hidden md:inline">{step.title}</span>
+                                </button>
+                                {index < steps.length - 1 && (
+                                    <div className={`w-8 h-0.5 mx-2 ${isCompleted ? "bg-emerald-300" : "bg-border"}`} />
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Error Display */}
+            {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200">
+                    {error}
+                </div>
+            )}
+
+            {/* Form Content */}
+            <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-card rounded-2xl border border-border p-6 md:p-8"
+            >
+                {currentStep === 1 && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Informasi Dasar</h2>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">Judul Modul</label>
+                            <Input
+                                value={formData.title}
+                                onChange={(e) => handleInputChange("title", e.target.value)}
+                                placeholder="Contoh: Modul Ajar Aljabar Dasar"
+                                className="h-12 rounded-xl"
+                            />
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Mata Pelajaran</label>
+                                <select
+                                    value={formData.subject}
+                                    onChange={(e) => handleInputChange("subject", e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="">Pilih mata pelajaran</option>
+                                    <option value="Matematika">Matematika</option>
+                                    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                                    <option value="IPA">IPA</option>
+                                    <option value="IPS">IPS</option>
+                                    <option value="PKN">PKN</option>
+                                    <option value="Bahasa Inggris">Bahasa Inggris</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Kelas</label>
+                                <select
+                                    value={formData.grade}
+                                    onChange={(e) => handleInputChange("grade", e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="">Pilih kelas</option>
+                                    <option value="7">Kelas 7</option>
+                                    <option value="8">Kelas 8</option>
+                                    <option value="9">Kelas 9</option>
+                                    <option value="10">Kelas 10</option>
+                                    <option value="11">Kelas 11</option>
+                                    <option value="12">Kelas 12</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Semester</label>
+                                <select
+                                    value={formData.semester}
+                                    onChange={(e) => handleInputChange("semester", e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="">Pilih semester</option>
+                                    <option value="1">Semester 1 (Ganjil)</option>
+                                    <option value="2">Semester 2 (Genap)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Alokasi Waktu</label>
+                                <div className="relative">
+                                    <Input
+                                        value={formData.duration}
+                                        onChange={(e) => handleInputChange("duration", e.target.value)}
+                                        placeholder="Contoh: 4"
+                                        className="h-12 rounded-xl pr-24"
+                                    />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                        JP
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {currentStep === 2 && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Capaian Pembelajaran</h2>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Capaian Pembelajaran (CP)
+                            </label>
+                            <p className="text-sm text-muted-foreground mb-3">
+                                Pilih atau masukkan Capaian Pembelajaran sesuai kurikulum merdeka
+                            </p>
+                            <textarea
+                                value={formData.capaianPembelajaran}
+                                onChange={(e) => handleInputChange("capaianPembelajaran", e.target.value)}
+                                placeholder="Contoh: Peserta didik mampu memahami konsep dasar aljabar..."
+                                rows={6}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            />
+                        </div>
+
+                        <div className="bg-accent/10 rounded-xl p-4 border border-accent/20">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Sparkles size={16} className="text-accent-dark" />
+                                <span className="font-semibold text-accent-dark text-sm">Tips AI</span>
+                            </div>
+                            <p className="text-sm text-accent-dark/80">
+                                Semakin detail CP yang Anda masukkan, semakin akurat modul yang dihasilkan.
+                                Anda juga bisa menggunakan database CP bawaan kami.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {currentStep === 3 && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Tujuan & Materi</h2>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Tujuan Pembelajaran
+                            </label>
+                            <textarea
+                                value={formData.tujuanPembelajaran}
+                                onChange={(e) => handleInputChange("tujuanPembelajaran", e.target.value)}
+                                placeholder="Masukkan tujuan pembelajaran yang ingin dicapai..."
+                                rows={4}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Materi Pembelajaran
+                            </label>
+                            <textarea
+                                value={formData.materi}
+                                onChange={(e) => handleInputChange("materi", e.target.value)}
+                                placeholder="Masukkan poin-poin materi yang akan diajarkan..."
+                                rows={4}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {currentStep === 4 && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Kegiatan Pembelajaran</h2>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Kegiatan Pendahuluan
+                            </label>
+                            <textarea
+                                value={formData.pendahuluan}
+                                onChange={(e) => handleInputChange("pendahuluan", e.target.value)}
+                                placeholder="Contoh: Guru membuka dengan salam, apersepsi..."
+                                rows={3}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Kegiatan Inti
+                            </label>
+                            <textarea
+                                value={formData.inti}
+                                onChange={(e) => handleInputChange("inti", e.target.value)}
+                                placeholder="Contoh: Siswa mengamati, menanya, mengumpulkan informasi..."
+                                rows={4}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                                Kegiatan Penutup
+                            </label>
+                            <textarea
+                                value={formData.penutup}
+                                onChange={(e) => handleInputChange("penutup", e.target.value)}
+                                placeholder="Contoh: Refleksi, kesimpulan, tugas rumah..."
+                                rows={3}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {currentStep === 5 && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Review & Generate</h2>
+
+                        <div className="bg-muted rounded-xl p-6 space-y-4">
+                            <h3 className="font-semibold text-foreground">Ringkasan Modul</h3>
+                            <div className="grid md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="text-muted-foreground">Judul:</span>
+                                    <p className="font-medium text-foreground">{formData.title || "-"}</p>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Mata Pelajaran:</span>
+                                    <p className="font-medium text-foreground">{formData.subject || "-"}</p>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Kelas:</span>
+                                    <p className="font-medium text-foreground">Kelas {formData.grade || "-"}</p>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground">Alokasi Waktu:</span>
+                                    <p className="font-medium text-foreground">{formData.duration || "-"} JP</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Streaming Output */}
+                        {(streaming.isStreaming || displayContent) && (
+                            <div className="bg-muted rounded-xl p-6 border border-border">
+                                <div className="flex items-center gap-2 mb-4">
+                                    {streaming.isStreaming && <Loader2 size={16} className="animate-spin text-primary" />}
+                                    <span className="font-semibold text-foreground">
+                                        {streaming.isStreaming ? "Menghasilkan Modul..." : "Hasil Generate"}
+                                    </span>
+                                </div>
+                                <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
+                                    {displayContent}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-primary/5 rounded-xl p-6 border border-primary/20">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                                    <Sparkles size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-foreground">Siap Generate dengan AI</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        AI akan melengkapi modul ajar Anda berdasarkan input di atas
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                onClick={handleGenerate}
+                                disabled={isGenerating || streaming.isStreaming || !formData.subject || !formData.grade}
+                                className="w-full bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl h-14 text-lg shadow-lg shadow-primary/20"
+                            >
+                                {isGenerating || streaming.isStreaming ? (
+                                    <>
+                                        <Loader2 size={20} className="mr-2 animate-spin" />
+                                        Sedang Menghasilkan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={20} className="mr-2" />
+                                        Generate Modul Ajar
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </motion.div>
+
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between">
+                <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
+                    disabled={currentStep === 1}
+                    className="rounded-xl"
+                >
+                    <ArrowLeft size={16} className="mr-2" />
+                    Sebelumnya
+                </Button>
+
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={handleSaveDraft}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                        ) : (
+                            <Save size={16} className="mr-2" />
+                        )}
+                        Simpan Draft
+                    </Button>
+                    {currentStep < 5 && (
+                        <Button
+                            onClick={() => setCurrentStep(prev => Math.min(5, prev + 1))}
+                            className="bg-primary hover:bg-primary-dark text-white rounded-xl"
+                        >
+                            Selanjutnya
+                            <ArrowRight size={16} className="ml-2" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
