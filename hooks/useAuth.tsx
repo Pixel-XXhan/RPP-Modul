@@ -27,6 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase()
 
     useEffect(() => {
+        // Skip if supabase is not available (build time)
+        if (!supabase) {
+            setLoading(false)
+            return
+        }
+
         // Get initial session
         const initSession = async () => {
             const { data: { session: sess } } = await supabase.auth.getSession()
@@ -46,9 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
 
         return () => subscription.unsubscribe()
-    }, [supabase.auth])
+    }, [supabase])
 
     const signIn = async (email: string, password: string) => {
+        if (!supabase) return { error: new Error('Supabase not initialized') }
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (!error) {
             router.push('/dashboard')
@@ -57,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const signUp = async (email: string, password: string, metadata?: { nama_lengkap?: string; institusi?: string }) => {
+        if (!supabase) return { error: new Error('Supabase not initialized') }
         const { error } = await supabase.auth.signUp({
             email,
             password,
@@ -68,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const signInWithGoogle = async () => {
+        if (!supabase) return
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -77,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const signInWithFacebook = async () => {
+        if (!supabase) return
         await supabase.auth.signInWithOAuth({
             provider: 'facebook',
             options: {
@@ -86,11 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const signOut = async () => {
+        if (!supabase) return
         await supabase.auth.signOut()
         router.push('/login')
     }
 
     const resetPassword = async (email: string) => {
+        if (!supabase) return { error: new Error('Supabase not initialized') }
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/reset-password`,
         })
