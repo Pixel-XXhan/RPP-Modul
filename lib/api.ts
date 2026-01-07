@@ -22,6 +22,12 @@ export async function apiRequest<T>(
     options: RequestOptions = {}
 ): Promise<T> {
     const supabase = getSupabase()
+
+    // During build time, return empty data
+    if (!supabase) {
+        return {} as T
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
 
     // Build URL with query params
@@ -105,6 +111,13 @@ export async function streamingRequest(
     onError?: (error: Error) => void
 ): Promise<void> {
     const supabase = getSupabase()
+
+    // During build time, skip
+    if (!supabase) {
+        onDone?.()
+        return
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
 
     try {
