@@ -18,8 +18,10 @@ import {
     FileText,
     CheckCircle2,
     Loader2,
+    Download,
 } from "lucide-react";
 import { useModulAjar } from "@/hooks/useModulAjar";
+import { api } from "@/lib/api";
 
 const steps = [
     { id: 1, title: "Informasi Dasar", icon: BookOpen },
@@ -47,7 +49,10 @@ export default function CreateModulAjarPage() {
         pendahuluan: "",
         inti: "",
         penutup: "",
+        model: "gemini-2.5-flash",
+        format: "pdf",
     });
+    const [result, setResult] = useState<any>(null);
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -73,15 +78,31 @@ export default function CreateModulAjarPage() {
     const handleGenerate = async () => {
         setIsGenerating(true);
         setGeneratedContent("");
+        setResult(null);
 
         try {
-            await generateWithStreaming({
+            const payload = {
                 mapel: formData.subject,
-                topik: formData.materi || formData.title,
+                topik: formData.title,
                 kelas: formData.grade,
-                alokasi_waktu: parseInt(formData.duration) || 4,
-                save_to_db: true,
-            });
+                kurikulum: "Kurikulum Merdeka",
+                alokasi_waktu: formData.duration ? parseInt(formData.duration) * 40 : 180,
+                model: formData.model,
+                format: formData.format,
+                document_type: "modul_ajar",
+                // Manual Overrides
+                capaian_pembelajaran: formData.capaianPembelajaran ? [formData.capaianPembelajaran] : [],
+                tujuan_pembelajaran: formData.tujuanPembelajaran ? [formData.tujuanPembelajaran] : [],
+                materi_pokok: formData.materi,
+                kegiatan_pembelajaran: {
+                    pendahuluan: formData.pendahuluan,
+                    inti: formData.inti,
+                    penutup: formData.penutup
+                }
+            };
+
+            const response: any = await api.post('/api/v2/export/generate', payload);
+            setResult(response);
         } catch (err) {
             console.error("Generation failed:", err);
         } finally {
@@ -372,19 +393,60 @@ export default function CreateModulAjarPage() {
                             </div>
                         </div>
 
-                        {/* Streaming Output */}
-                        {(streaming.isStreaming || displayContent) && (
-                            <div className="bg-muted rounded-xl p-6 border border-border">
-                                <div className="flex items-center gap-2 mb-4">
-                                    {streaming.isStreaming && <Loader2 size={16} className="animate-spin text-primary" />}
-                                    <span className="font-semibold text-foreground">
-                                        {streaming.isStreaming ? "Menghasilkan Modul..." : "Hasil Generate"}
-                                    </span>
-                                </div>
-                                <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
-                                    {displayContent}
-                                </div>
+                        {/* Export Configuration */}
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Model AI</label>
+                                <select
+                                    value={formData.model}
+                                    onChange={(e) => handleInputChange("model", e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
+                                    <option value="gemini-pros">Gemini Pro (Detail Tinggi)</option>
+                                </select>
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">Format Output</label>
+                                <select
+                                    value={formData.format}
+                                    onChange={(e) => handleInputChange("format", e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="pdf">PDF Document (.pdf)</option>
+                                    <option value="docx">Word Document (.docx)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Result Display */}
+                        {result && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                                        <CheckCircle2 className="text-emerald-600" size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-emerald-900">Modul Siap!</h3>
+                                        <p className="text-sm text-emerald-700">
+                                            Modul Ajar telah berhasil digenerate dan siap diunduh.
+                                        </p>
+                                    </div>
+                                    <a
+                                        href={result.download_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                                    >
+                                        <Download size={18} />
+                                        Download {result.format.toUpperCase()}
+                                    </a>
+                                </div>
+                            </motion.div>
                         )}
 
                         <div className="bg-primary/5 rounded-xl p-6 border border-primary/20">
@@ -401,10 +463,10 @@ export default function CreateModulAjarPage() {
                             </div>
                             <Button
                                 onClick={handleGenerate}
-                                disabled={isGenerating || streaming.isStreaming || !formData.subject || !formData.grade}
+                                disabled={isGenerating || !formData.subject || !formData.grade}
                                 className="w-full bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl h-14 text-lg shadow-lg shadow-primary/20"
                             >
-                                {isGenerating || streaming.isStreaming ? (
+                                {isGenerating ? (
                                     <>
                                         <Loader2 size={20} className="mr-2 animate-spin" />
                                         Sedang Menghasilkan...

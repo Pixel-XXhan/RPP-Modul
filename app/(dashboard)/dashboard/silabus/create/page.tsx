@@ -12,10 +12,13 @@ import {
     Trash2,
     Save,
     Loader2,
+    CheckCircle2,
     Calendar,
     ChevronDown,
     ChevronUp,
+    Download,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface WeekData {
     id: string;
@@ -32,7 +35,10 @@ export default function CreateSilabusPage() {
         grade: "",
         semester: "",
         year: "2025/2026",
+        model: "gemini-2.5-flash",
+        format: "pdf",
     });
+    const [result, setResult] = useState<any>(null);
 
     const [weeks, setWeeks] = useState<WeekData[]>([
         { id: "1", week: "1-2", topic: "Pengenalan Bilangan Bulat", cp: "MAT-D-01" },
@@ -57,8 +63,35 @@ export default function CreateSilabusPage() {
 
     const handleGenerate = async () => {
         setIsGenerating(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsGenerating(false);
+        setResult(null);
+        try {
+            // Map weeks to kegiatan_pembelajaran format
+            const kegiatanMap: Record<string, string> = {};
+            weeks.forEach(w => {
+                if (w.week && w.topic) {
+                    kegiatanMap[`Minggu ${w.week}`] = `${w.topic} (CP: ${w.cp})`;
+                }
+            });
+
+            const payload = {
+                mapel: formData.subject,
+                topik: formData.title,
+                kelas: formData.grade,
+                kurikulum: "Kurikulum Merdeka",
+                alokasi_waktu: weeks.length * 4, // Estimate
+                model: formData.model,
+                format: formData.format,
+                document_type: "silabus",
+                kegiatan_pembelajaran: kegiatanMap
+            };
+
+            const response: any = await api.post('/api/v2/export/generate', payload);
+            setResult(response);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const canGenerate = formData.title && formData.subject && formData.grade && formData.semester;
@@ -188,6 +221,33 @@ export default function CreateSilabusPage() {
                         ⚠️ Lengkapi informasi dasar terlebih dahulu sebelum generate
                     </p>
                 )}
+
+                {/* Configuration */}
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Model AI</label>
+                        <select
+                            value={formData.model}
+                            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                            className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
+                            <option value="gemini-pros">Gemini Pro (Detail Tinggi)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Format Output</label>
+                        <select
+                            value={formData.format}
+                            onChange={(e) => setFormData({ ...formData, format: e.target.value })}
+                            className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="pdf">PDF Document (.pdf)</option>
+                            <option value="docx">Word Document (.docx)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <Button
                     onClick={handleGenerate}
                     disabled={isGenerating || !canGenerate}
@@ -195,6 +255,35 @@ export default function CreateSilabusPage() {
                 >
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate Silabus</>}
                 </Button>
+
+                {result && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="text-emerald-600" size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-emerald-900">Silabus Siap!</h3>
+                                <p className="text-sm text-emerald-700">
+                                    Silabus Anda telah berhasil digenerate.
+                                </p>
+                            </div>
+                            <a
+                                href={result.download_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                            >
+                                <Download size={18} />
+                                Download {result.format.toUpperCase()}
+                            </a>
+                        </div>
+                    </motion.div>
+                )}
             </motion.div>
 
             <div className="flex justify-between">

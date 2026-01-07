@@ -15,9 +15,14 @@ import {
     Save,
     CheckCircle2,
     Loader2,
+    CheckCircle2,
+    Loader2,
     BookOpen,
     Calendar,
+    Download,
 } from "lucide-react";
+import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 const steps = [
     { id: 1, title: "Informasi Dasar", icon: FileText },
@@ -39,11 +44,15 @@ export default function CreateRPPPage() {
         kompetensiDasar: "",
         tujuanPembelajaran: "",
         materi: "",
-        metode: "",
+        method: "",
         pendahuluan: "",
         inti: "",
         penutup: "",
+        model: "gemini-2.5-flash",
+        format: "pdf",
     });
+    const [result, setResult] = useState<any>(null);
+    const { toast } = useToast();
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -51,8 +60,44 @@ export default function CreateRPPPage() {
 
     const handleGenerate = async () => {
         setIsGenerating(true);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        setIsGenerating(false);
+        setResult(null);
+        try {
+            const payload = {
+                mapel: formData.subject,
+                topik: formData.title,
+                kelas: formData.grade,
+                kurikulum: "Kurikulum Merdeka",
+                alokasi_waktu: formData.duration ? parseInt(formData.duration) * 40 : 90,
+                model: formData.model,
+                format: formData.format,
+                document_type: "rpp",
+                // Manual Overrides
+                materi_pokok: formData.materi,
+                metode: formData.metode,
+                tujuan_pembelajaran: formData.tujuanPembelajaran ? [formData.tujuanPembelajaran] : [],
+                kegiatan_pembelajaran: {
+                    pendahuluan: formData.pendahuluan,
+                    inti: formData.inti,
+                    penutup: formData.penutup
+                }
+            };
+
+            const response: any = await api.post('/api/v2/export/generate', payload);
+            setResult(response);
+            toast({
+                title: "Berhasil!",
+                description: "Dokumen RPP berhasil dibuat.",
+            });
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Gagal",
+                description: "Terjadi kesalahan saat membuat dokumen.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     return (
@@ -83,10 +128,10 @@ export default function CreateRPPPage() {
                                 <button
                                     onClick={() => setCurrentStep(step.id)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isActive
-                                            ? "bg-primary text-white"
-                                            : isCompleted
-                                                ? "bg-emerald-100 text-emerald-700"
-                                                : "bg-neutral-100 text-muted-foreground hover:bg-neutral-200"
+                                        ? "bg-primary text-white"
+                                        : isCompleted
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : "bg-neutral-100 text-muted-foreground hover:bg-neutral-200"
                                         }`}
                                 >
                                     {isCompleted ? <CheckCircle2 size={18} /> : <Icon size={18} />}
@@ -286,92 +331,148 @@ export default function CreateRPPPage() {
 
                 {currentStep === 4 && (
                     <div className="space-y-6">
-                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Review & Generate</h2>
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-bold font-serif text-foreground mb-6">Review & Generate</h2>
 
-                        <div className="bg-neutral-50 rounded-xl p-6 space-y-4">
-                            <h3 className="font-semibold text-foreground">Ringkasan RPP</h3>
-                            <div className="grid md:grid-cols-2 gap-4 text-sm">
+                            {/* Configuration */}
+                            <div className="grid md:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <span className="text-muted-foreground">Judul:</span>
-                                    <p className="font-medium text-foreground">{formData.title || "-"}</p>
+                                    <label className="block text-sm font-medium text-foreground mb-2">Model AI</label>
+                                    <select
+                                        value={formData.model}
+                                        onChange={(e) => handleInputChange("model", e.target.value)}
+                                        className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    >
+                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
+                                        <option value="gemini-pros">Gemini Pro (Detail Tinggi)</option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <span className="text-muted-foreground">Mata Pelajaran:</span>
-                                    <p className="font-medium text-foreground">{formData.subject || "-"}</p>
-                                </div>
-                                <div>
-                                    <span className="text-muted-foreground">Kelas:</span>
-                                    <p className="font-medium text-foreground">Kelas {formData.grade || "-"}</p>
-                                </div>
-                                <div>
-                                    <span className="text-muted-foreground">Minggu:</span>
-                                    <p className="font-medium text-foreground">Minggu {formData.week || "-"}</p>
+                                    <label className="block text-sm font-medium text-foreground mb-2">Format Output</label>
+                                    <select
+                                        value={formData.format}
+                                        onChange={(e) => handleInputChange("format", e.target.value)}
+                                        className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    >
+                                        <option value="pdf">PDF Document (.pdf)</option>
+                                        <option value="docx">Word Document (.docx)</option>
+                                    </select>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="bg-primary/5 rounded-xl p-6 border border-primary/20">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                                    <Sparkles size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-foreground">Siap Generate dengan AI</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        AI akan melengkapi dan menyempurnakan RPP Anda
-                                    </p>
+                            <div className="bg-neutral-50 rounded-xl p-6 space-y-4">
+                                <h3 className="font-semibold text-foreground">Ringkasan RPP</h3>
+                                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground">Judul:</span>
+                                        <p className="font-medium text-foreground">{formData.title || "-"}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">Mata Pelajaran:</span>
+                                        <p className="font-medium text-foreground">{formData.subject || "-"}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">Kelas:</span>
+                                        <p className="font-medium text-foreground">Kelas {formData.grade || "-"}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">Minggu:</span>
+                                        <p className="font-medium text-foreground">Minggu {formData.week || "-"}</p>
+                                    </div>
                                 </div>
                             </div>
-                            <Button
-                                onClick={handleGenerate}
-                                disabled={isGenerating}
-                                className="w-full bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl h-14 text-lg shadow-lg shadow-primary/20"
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 size={20} className="mr-2 animate-spin" />
-                                        Sedang Menghasilkan RPP...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles size={20} className="mr-2" />
-                                        Generate RPP
-                                    </>
-                                )}
-                            </Button>
+
+                            <div className="bg-primary/5 rounded-xl p-6 border border-primary/20">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                                        <Sparkles size={24} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-foreground">Siap Generate dengan AI</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            AI akan melengkapi dan menyempurnakan RPP Anda
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                    className="w-full bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl h-14 text-lg shadow-lg shadow-primary/20"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 size={20} className="mr-2 animate-spin" />
+                                            Sedang Menghasilkan RPP...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={20} className="mr-2" />
+                                            Generate RPP
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+
+                            {result && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                                            <CheckCircle2 className="text-emerald-600" size={24} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-emerald-900">Dokumen Siap!</h3>
+                                            <p className="text-sm text-emerald-700">
+                                                RPP Anda telah berhasil digenerate dan siap diunduh.
+                                            </p>
+                                        </div>
+                                        <a
+                                            href={result.download_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                                        >
+                                            <Download size={18} />
+                                            Download {result.format.toUpperCase()}
+                                        </a>
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
-                    </div>
                 )}
-            </motion.div>
+                    </motion.div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between">
-                <Button
-                    variant="outline"
-                    onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
-                    disabled={currentStep === 1}
-                    className="rounded-xl"
-                >
-                    <ArrowLeft size={16} className="mr-2" />
-                    Sebelumnya
-                </Button>
-
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="rounded-xl">
-                        <Save size={16} className="mr-2" />
-                        Simpan Draft
+                <div className="flex items-center justify-between">
+                    <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
+                        disabled={currentStep === 1}
+                        className="rounded-xl"
+                    >
+                        <ArrowLeft size={16} className="mr-2" />
+                        Sebelumnya
                     </Button>
-                    {currentStep < 4 && (
-                        <Button
-                            onClick={() => setCurrentStep(prev => Math.min(4, prev + 1))}
-                            className="bg-primary hover:bg-primary-dark text-white rounded-xl"
-                        >
-                            Selanjutnya
-                            <ArrowRight size={16} className="ml-2" />
+
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" className="rounded-xl">
+                            <Save size={16} className="mr-2" />
+                            Simpan Draft
                         </Button>
-                    )}
+                        {currentStep < 4 && (
+                            <Button
+                                onClick={() => setCurrentStep(prev => Math.min(4, prev + 1))}
+                                className="bg-primary hover:bg-primary-dark text-white rounded-xl"
+                            >
+                                Selanjutnya
+                                <ArrowRight size={16} className="ml-2" />
+                            </Button>
+                        )}
+                    </div>
                 </div>
-            </div>
         </div>
     );
 }
