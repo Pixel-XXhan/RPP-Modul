@@ -167,8 +167,8 @@ export default function TujuanPembelajaranPage() {
     const [filterStatus, setFilterStatus] = useState<"all" | "completed" | "in-progress" | "pending">("all");
 
     const filteredTPs = mockTPs.filter(tp => {
-        const matchesSearch = tp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            tp.code.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (tp.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (tp.code || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = filterStatus === "all" || tp.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
@@ -201,8 +201,8 @@ export default function TujuanPembelajaranPage() {
                         key={status.value}
                         onClick={() => setFilterStatus(status.value as any)}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${filterStatus === status.value
-                                ? "bg-primary text-white"
-                                : "bg-white border border-neutral-200 text-muted-foreground hover:bg-neutral-50"
+                            ? "bg-primary text-white"
+                            : "bg-white border border-neutral-200 text-muted-foreground hover:bg-neutral-50"
                             }`}
                     >
                         {status.label}

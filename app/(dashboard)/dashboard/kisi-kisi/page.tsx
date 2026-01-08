@@ -122,7 +122,7 @@ export default function KisiKisiPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredKisiKisi = mockKisiKisi.filter(k =>
-        k.title.toLowerCase().includes(searchQuery.toLowerCase())
+        (k.title || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (

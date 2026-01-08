@@ -43,7 +43,7 @@ export default function KegiatanPage() {
     const types = ["all", "diskusi", "latihan", "eksplorasi", "presentasi", "kuis", "praktikum"];
 
     const filteredActivities = mockActivities.filter(activity => {
-        const matchesSearch = !searchQuery || activity.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = !searchQuery || (activity.title || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = typeFilter === "all" || activity.type === typeFilter;
         return matchesSearch && matchesType;
     });

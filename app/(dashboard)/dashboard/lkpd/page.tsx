@@ -35,8 +35,8 @@ export default function LKPDPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredLKPD = mockLKPD.filter(lkpd =>
-        lkpd.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lkpd.subject.toLowerCase().includes(searchQuery.toLowerCase())
+        (lkpd.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (lkpd.subject || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (

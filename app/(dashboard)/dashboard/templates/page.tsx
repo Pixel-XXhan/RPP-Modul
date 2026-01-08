@@ -50,7 +50,7 @@ export default function TemplatesPage() {
     const [activeCategory, setActiveCategory] = useState("all");
 
     const filteredTemplates = mockTemplates.filter(template => {
-        const matchesSearch = !searchQuery || template.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = !searchQuery || (template.title || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = activeCategory === "all" || template.category === activeCategory;
         return matchesSearch && matchesCategory;
     });

@@ -145,7 +145,7 @@ export default function RubrikPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredRubriks = mockRubriks.filter(r =>
-        r.title.toLowerCase().includes(searchQuery.toLowerCase())
+        (r.title || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (

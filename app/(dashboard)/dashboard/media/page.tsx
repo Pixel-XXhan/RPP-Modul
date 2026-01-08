@@ -218,7 +218,7 @@ export default function MediaPage() {
                                 <div className="p-4">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${typeColors[jenis] || typeColors.dokumen}`}>
-                                            {jenis.charAt(0).toUpperCase() + jenis.slice(1)}
+                                            {(jenis || 'dokumen').charAt(0).toUpperCase() + (jenis || 'dokumen').slice(1)}
                                         </span>
                                     </div>
 

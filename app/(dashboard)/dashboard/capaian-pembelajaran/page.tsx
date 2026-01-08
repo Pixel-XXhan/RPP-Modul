@@ -122,8 +122,8 @@ export default function CapaianPembelajaranPage() {
     const subjects = ["all", ...new Set(mockCPs.map(cp => cp.subject))];
 
     const filteredCPs = mockCPs.filter(cp => {
-        const matchesSearch = cp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cp.code.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (cp.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (cp.code || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesSubject = selectedSubject === "all" || cp.subject === selectedSubject;
         return matchesSearch && matchesSubject;
     });

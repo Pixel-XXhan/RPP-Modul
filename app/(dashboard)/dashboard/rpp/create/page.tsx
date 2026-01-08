@@ -432,7 +432,7 @@ export default function CreateRPPPage() {
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
                                     >
                                         <Download size={18} />
-                                        Download {result.format.toUpperCase()}
+                                        Download {(result.format || 'pdf').toUpperCase()}
                                     </a>
                                 </div>
                             </motion.div>

@@ -53,7 +53,7 @@ function SoalCard({
                         {typeLabels[soal.tipe] || soal.tipe}
                     </span>
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${difficultyColors[soal.tingkat_kesulitan]}`}>
-                        {soal.tingkat_kesulitan.charAt(0).toUpperCase() + soal.tingkat_kesulitan.slice(1)}
+                        {(soal.tingkat_kesulitan || 'mudah').charAt(0).toUpperCase() + (soal.tingkat_kesulitan || 'mudah').slice(1)}
                     </span>
                 </div>
             </div>
@@ -108,7 +108,7 @@ export default function BankSoalPage() {
     };
 
     const filteredSoal = soalList.filter(s => {
-        const matchesSearch = s.pertanyaan.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (s.pertanyaan || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = filterType === "all" || s.tipe === filterType;
         const matchesDifficulty = filterDifficulty === "all" || s.tingkat_kesulitan === filterDifficulty;
         return matchesSearch && matchesType && matchesDifficulty;

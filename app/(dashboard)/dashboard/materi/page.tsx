@@ -168,7 +168,7 @@ export default function MateriPage() {
     const [filterType, setFilterType] = useState<"all" | "text" | "video" | "image" | "link">("all");
 
     const filteredMateri = mockMateri.filter(m => {
-        const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (m.title || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = filterType === "all" || m.type === filterType;
         return matchesSearch && matchesType;
     });
@@ -203,8 +203,8 @@ export default function MateriPage() {
                             key={type.value}
                             onClick={() => setFilterType(type.value as any)}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${filterType === type.value
-                                    ? "bg-primary text-white"
-                                    : "bg-white border border-neutral-200 text-muted-foreground hover:bg-neutral-50"
+                                ? "bg-primary text-white"
+                                : "bg-white border border-neutral-200 text-muted-foreground hover:bg-neutral-50"
                                 }`}
                         >
                             {Icon && <Icon size={16} />}

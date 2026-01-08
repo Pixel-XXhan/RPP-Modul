@@ -53,7 +53,7 @@ export default function SearchPage() {
     const [isSearching, setIsSearching] = useState(false);
 
     const filteredResults = mockResults.filter(result => {
-        const matchesQuery = !query || result.title.toLowerCase().includes(query.toLowerCase());
+        const matchesQuery = !query || (result.title || "").toLowerCase().includes(query.toLowerCase());
         const matchesCategory = selectedCategory === "all" || result.type === selectedCategory;
         return matchesQuery && matchesCategory;
     });
@@ -99,8 +99,8 @@ export default function SearchPage() {
                     return (
                         <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${selectedCategory === cat.id
-                                    ? "bg-primary text-white"
-                                    : "bg-white border border-neutral-200 text-muted-foreground hover:bg-neutral-50"
+                                ? "bg-primary text-white"
+                                : "bg-white border border-neutral-200 text-muted-foreground hover:bg-neutral-50"
                                 }`}>
                             <Icon size={16} />{cat.label}
                         </button>
