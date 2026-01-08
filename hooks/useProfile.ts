@@ -13,7 +13,7 @@ export function useProfile() {
         setLoading(true)
         setError(null)
         try {
-            const data = await api.get<UserProfile>('/api/v2/user-profile/me')
+            const data = await api.get<UserProfile>('/api/v2/users/profile')
             setProfile(data)
             return data
         } catch (err) {
@@ -28,7 +28,7 @@ export function useProfile() {
         setLoading(true)
         setError(null)
         try {
-            const updated = await api.put<UserProfile>('/api/v2/user-profile/me', data)
+            const updated = await api.put<UserProfile>('/api/v2/users/profile', data)
             setProfile(updated)
             return updated
         } catch (err) {
@@ -43,7 +43,7 @@ export function useProfile() {
         setLoading(true)
         setError(null)
         try {
-            const updated = await api.patch<UserProfile>('/api/v2/user-profile/preferences', preferences)
+            const updated = await api.put<UserProfile>('/api/v2/users/preferences', preferences)
             setProfile(prev => prev ? { ...prev, preferences: updated.preferences } : null)
             return updated
         } catch (err) {

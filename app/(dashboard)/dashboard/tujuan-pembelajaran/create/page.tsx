@@ -2,15 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Save, Loader2, Plus, Trash2, GraduationCap } from "lucide-react";
+import { ArrowLeft, Sparkles, Save, Loader2, Plus, Trash2, GraduationCap, AlertCircle } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function CreateTPPage() {
+    const router = useRouter();
     const [isGenerating, setIsGenerating] = useState(false);
-    const [formData, setFormData] = useState({ title: "", subject: "", grade: "", cpId: "", week: "" });
-    const [indicators, setIndicators] = useState(["", "", ""]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [formData, setFormData] = useState({
+        title: "",
+        subject: "",
+        grade: "",
+        topik: "",
+        jumlah: 4,
+        model: "gemini-2.5-flash"
+    });
+    const [indicators, setIndicators] = useState<string[]>([]);
 
     const addIndicator = () => setIndicators([...indicators, ""]);
     const removeIndicator = (index: number) => setIndicators(indicators.filter((_, i) => i !== index));
@@ -21,15 +33,55 @@ export default function CreateTPPage() {
     };
 
     const handleGenerate = async () => {
+        if (!formData.subject || !formData.topik) {
+            setError("Mohon isi Mata Pelajaran dan Topik terlebih dahulu");
+            return;
+        }
         setIsGenerating(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setFormData({ ...formData, title: "Siswa dapat menjelaskan konsep bilangan bulat positif dan negatif dengan benar" });
-        setIndicators([
-            "Dapat menyebutkan contoh bilangan bulat positif",
-            "Dapat menyebutkan contoh bilangan bulat negatif",
-            "Dapat menempatkan bilangan bulat pada garis bilangan",
-        ]);
-        setIsGenerating(false);
+        setError(null);
+        try {
+            const result = await api.post<any>('/api/v2/tp/generate', {
+                mapel: formData.subject,
+                topik: formData.topik,
+                kelas: formData.grade || "Umum",
+                jumlah: formData.jumlah,
+                model: formData.model
+            });
+
+            if (result.tujuan_pembelajaran && result.tujuan_pembelajaran.length > 0) {
+                const tp = result.tujuan_pembelajaran[0];
+                setFormData(prev => ({ ...prev, title: tp.deskripsi || "" }));
+                if (tp.indikator && Array.isArray(tp.indikator)) {
+                    setIndicators(tp.indikator);
+                }
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError(err?.message || "Gagal generate tujuan pembelajaran. Silakan coba lagi.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!formData.title) {
+            setError("Mohon isi rumusan tujuan pembelajaran");
+            return;
+        }
+        setIsSaving(true);
+        setError(null);
+        try {
+            await api.post('/api/v2/tp', {
+                deskripsi: formData.title,
+                kelas: formData.grade,
+                indikator: indicators.filter(i => i.trim() !== "")
+            });
+            router.push("/dashboard/tujuan-pembelajaran");
+        } catch (err: any) {
+            setError(err?.message || "Gagal menyimpan tujuan pembelajaran");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -38,73 +90,92 @@ export default function CreateTPPage() {
                 <Link href="/dashboard/tujuan-pembelajaran" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
                     <ArrowLeft size={16} className="mr-2" />Kembali
                 </Link>
-                <h1 className="text-2xl md:text-3xl font-bold font-serif">Buat Tujuan Pembelajaran</h1>
+                <h1 className="text-2xl md:text-3xl font-bold font-serif text-foreground">Buat Tujuan Pembelajaran</h1>
                 <p className="text-muted-foreground mt-1">Susun tujuan pembelajaran berdasarkan Capaian Pembelajaran</p>
             </div>
 
-            {/* CP Selection */}
+            {/* Error Display */}
+            {error && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800 flex items-center gap-3">
+                    <AlertCircle className="text-red-600 shrink-0" size={20} />
+                    <p className="text-red-800 dark:text-red-200 text-sm flex-1">{error}</p>
+                    <Button variant="ghost" size="sm" onClick={() => setError(null)}>Tutup</Button>
+                </motion.div>
+            )}
+
+            {/* Topic Info */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6">
+                className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600">
                         <GraduationCap size={20} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-emerald-900">Capaian Pembelajaran</h3>
-                        <p className="text-sm text-emerald-700">Pilih CP sebagai dasar penyusunan TP</p>
+                        <h3 className="font-bold text-emerald-900 dark:text-emerald-100">Topik Pembelajaran</h3>
+                        <p className="text-sm text-emerald-700 dark:text-emerald-300">AI akan menyusun TP berdasarkan topik</p>
                     </div>
                 </div>
-                <select value={formData.cpId} onChange={(e) => setFormData({ ...formData, cpId: e.target.value })}
-                    className="w-full h-12 px-4 rounded-xl border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200">
-                    <option value="">Pilih Capaian Pembelajaran</option>
-                    <option value="1">MAT-D-01: Memahami konsep bilangan bulat dan pecahan</option>
-                    <option value="2">MAT-D-02: Menerapkan operasi hitung dalam pemecahan masalah</option>
-                    <option value="3">BIN-D-01: Memahami teks naratif secara lisan dan tulis</option>
-                </select>
+                <Input
+                    value={formData.topik}
+                    onChange={(e) => setFormData({ ...formData, topik: e.target.value })}
+                    placeholder="Contoh: Pengukuran Sudut, Teks Naratif, Hukum Newton"
+                    className="h-12 rounded-xl bg-white dark:bg-background"
+                />
             </motion.div>
 
-            {/* Basic Info */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border p-6">
-                <h2 className="text-lg font-bold mb-4">Informasi Dasar</h2>
+            {/* Basic Info - Text inputs */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-2xl border border-border p-6">
+                <h2 className="text-lg font-bold mb-4 text-foreground">Informasi Dasar</h2>
                 <div className="space-y-4">
                     <div className="grid md:grid-cols-3 gap-4">
-                        <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                            <option value="">Mata Pelajaran</option>
-                            <option value="matematika">Matematika</option>
-                            <option value="bahasa-indonesia">Bahasa Indonesia</option>
-                        </select>
-                        <select value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                            <option value="">Kelas</option>
-                            <option value="7">Kelas 7</option>
-                            <option value="8">Kelas 8</option>
-                        </select>
-                        <Input value={formData.week} onChange={(e) => setFormData({ ...formData, week: e.target.value })} placeholder="Minggu (1-2)" className="h-12 rounded-xl" />
+                        <Input
+                            value={formData.subject}
+                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            placeholder="Mata Pelajaran"
+                            className="h-12 rounded-xl"
+                        />
+                        <Input
+                            value={formData.grade}
+                            onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                            placeholder="Kelas (X PPLG, XI TMS)"
+                            className="h-12 rounded-xl"
+                        />
+                        <Input
+                            type="number"
+                            value={formData.jumlah}
+                            onChange={(e) => setFormData({ ...formData, jumlah: parseInt(e.target.value) || 4 })}
+                            placeholder="Jumlah TP"
+                            className="h-12 rounded-xl"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-foreground mb-2">Rumusan Tujuan Pembelajaran</label>
                         <textarea value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             placeholder="Siswa dapat... (rumuskan dengan kata kerja operasional sesuai level kognitif)" rows={3}
-                            className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                            className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
                     </div>
                 </div>
             </motion.div>
 
             {/* Indicators */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border p-6">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-2xl border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold">Indikator Pencapaian</h2>
+                    <h2 className="text-lg font-bold text-foreground">Indikator Pencapaian</h2>
                     <Button onClick={addIndicator} variant="outline" className="rounded-xl"><Plus size={16} className="mr-2" />Tambah</Button>
                 </div>
                 <div className="space-y-3">
-                    {indicators.map((ind, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">{i + 1}</span>
-                            <Input value={ind} onChange={(e) => updateIndicator(i, e.target.value)} placeholder="Deskripsi indikator pencapaian" className="flex-1 h-10 rounded-lg" />
-                            {indicators.length > 1 && (
-                                <button onClick={() => removeIndicator(i)} className="p-2 hover:bg-red-100 rounded-lg text-red-500"><Trash2 size={16} /></button>
-                            )}
-                        </div>
-                    ))}
+                    {indicators.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">Belum ada indikator. Klik "Generate dengan AI" atau "Tambah"</p>
+                    ) : (
+                        indicators.map((ind, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">{i + 1}</span>
+                                <Input value={ind} onChange={(e) => updateIndicator(i, e.target.value)} placeholder="Deskripsi indikator pencapaian" className="flex-1 h-10 rounded-lg" />
+                                <button onClick={() => removeIndicator(i)} className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-500"><Trash2 size={16} /></button>
+                            </div>
+                        ))
+                    )}
                 </div>
             </motion.div>
 
@@ -112,7 +183,18 @@ export default function CreateTPPage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-primary/5 rounded-2xl p-6 border border-primary/20">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center"><Sparkles size={24} className="text-white" /></div>
-                    <div><h3 className="font-bold">Generate dengan AI</h3><p className="text-sm text-muted-foreground">AI akan merumuskan TP dan indikator berdasarkan CP</p></div>
+                    <div><h3 className="font-bold text-foreground">Generate dengan AI</h3><p className="text-sm text-muted-foreground">AI akan merumuskan TP dan indikator berdasarkan topik</p></div>
+                </div>
+                <div className="flex gap-3 mb-4">
+                    <select
+                        value={formData.model}
+                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                        className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-foreground"
+                    >
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail)</option>
+                        <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                    </select>
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary text-white rounded-xl h-14 text-lg">
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate TP</>}
@@ -121,7 +203,10 @@ export default function CreateTPPage() {
 
             <div className="flex justify-between">
                 <Link href="/dashboard/tujuan-pembelajaran"><Button variant="outline" className="rounded-xl"><ArrowLeft size={16} className="mr-2" />Batal</Button></Link>
-                <Button className="bg-primary text-white rounded-xl"><Save size={16} className="mr-2" />Simpan TP</Button>
+                <Button onClick={handleSave} disabled={isSaving} className="bg-primary text-white rounded-xl">
+                    {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                    Simpan TP
+                </Button>
             </div>
         </div>
     );

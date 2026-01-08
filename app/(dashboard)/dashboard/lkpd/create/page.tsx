@@ -134,6 +134,7 @@ export default function CreateLKPDPage() {
                         >
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
                             <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
+                            <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
                         </select>
                     </div>
                     <div>

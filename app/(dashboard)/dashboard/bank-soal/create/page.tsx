@@ -2,28 +2,118 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckSquare, AlignLeft, ListOrdered } from "lucide-react";
+import { ArrowLeft, Sparkles, Save, Loader2, CheckSquare, AlignLeft, ListOrdered, AlertCircle } from "lucide-react";
+import { useBankSoal } from "@/hooks/useBankSoal";
+import { TipeSoal, TingkatKesulitan } from "@/types/database";
+
+const difficultyMap: Record<string, TingkatKesulitan> = {
+    easy: "mudah",
+    medium: "sedang",
+    hard: "sulit"
+};
+
+const typeMap: Record<string, TipeSoal> = {
+    pg: "pilihan_ganda",
+    essay: "essay",
+    isian: "isian_singkat"
+};
 
 export default function CreateBankSoalPage() {
+    const router = useRouter();
+    const { generateSoal, create } = useBankSoal();
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [questionType, setQuestionType] = useState<"pg" | "essay" | "isian">("pg");
-    const [formData, setFormData] = useState({ subject: "", grade: "", topic: "", difficulty: "medium" });
-    const [options, setOptions] = useState(["", "", "", ""]);
+    const [formData, setFormData] = useState({
+        subject: "",
+        grade: "",
+        topic: "",
+        difficulty: "medium",
+        model: "gemini-2.5-flash"
+    });
+    const [options, setOptions] = useState([
+        { label: "A", text: "" },
+        { label: "B", text: "" },
+        { label: "C", text: "" },
+        { label: "D", text: "" }
+    ]);
     const [correctAnswer, setCorrectAnswer] = useState(0);
     const [question, setQuestion] = useState("");
     const [explanation, setExplanation] = useState("");
 
     const handleGenerate = async () => {
+        if (!formData.subject || !formData.topic) {
+            setError("Mohon isi Mata Pelajaran dan Topik terlebih dahulu");
+            return;
+        }
         setIsGenerating(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setQuestion("Hasil dari 2³ × 3² adalah...");
-        setOptions(["18", "24", "72", "108"]);
-        setCorrectAnswer(2);
-        setExplanation("2³ = 8, 3² = 9, jadi 8 × 9 = 72");
-        setIsGenerating(false);
+        setError(null);
+        try {
+            const result = await generateSoal({
+                mapel: formData.subject,
+                topik: formData.topic,
+                kelas: formData.grade || "Umum",
+                tipe: typeMap[questionType],
+                tingkat_kesulitan: difficultyMap[formData.difficulty],
+                jumlah: 1,
+                model: formData.model,
+                save_to_db: false
+            });
+
+            if (result.soal && result.soal.length > 0) {
+                const soal = result.soal[0];
+                setQuestion(soal.pertanyaan);
+                if (soal.pilihan && soal.pilihan.length > 0) {
+                    setOptions(soal.pilihan.map((p: any, i: number) => ({
+                        label: String.fromCharCode(65 + i),
+                        text: p.text || p
+                    })));
+                }
+                if (soal.jawaban_benar) {
+                    const answerIndex = soal.pilihan?.findIndex((p: any) =>
+                        p.label === soal.jawaban_benar || p.text === soal.jawaban_benar
+                    ) ?? -1;
+                    if (answerIndex >= 0) setCorrectAnswer(answerIndex);
+                }
+                if (soal.pembahasan) {
+                    setExplanation(soal.pembahasan);
+                }
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError(err?.message || "Gagal generate soal. Silakan coba lagi.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!question) {
+            setError("Soal tidak boleh kosong");
+            return;
+        }
+        setIsSaving(true);
+        setError(null);
+        try {
+            await create({
+                tipe: typeMap[questionType],
+                tingkat_kesulitan: difficultyMap[formData.difficulty],
+                pertanyaan: question,
+                pilihan: questionType === "pg" ? options : undefined,
+                jawaban_benar: questionType === "pg" ? options[correctAnswer]?.label : undefined,
+                pembahasan: explanation || undefined
+            });
+            router.push("/dashboard/bank-soal");
+        } catch (err: any) {
+            setError(err?.message || "Gagal menyimpan soal");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -36,6 +126,21 @@ export default function CreateBankSoalPage() {
                 <p className="text-muted-foreground mt-1">Buat soal untuk bank soal</p>
             </div>
 
+            {/* Error Display */}
+            {error && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800 flex items-center gap-3"
+                >
+                    <AlertCircle className="text-red-600 dark:text-red-400 shrink-0" size={20} />
+                    <p className="text-red-800 dark:text-red-200 text-sm flex-1">{error}</p>
+                    <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-red-600">
+                        Tutup
+                    </Button>
+                </motion.div>
+            )}
+
             {/* Type Selection */}
             <div className="flex gap-3">
                 {[
@@ -46,7 +151,7 @@ export default function CreateBankSoalPage() {
                     const Icon = type.icon;
                     return (
                         <button key={type.value} onClick={() => setQuestionType(type.value as any)}
-                            className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${questionType === type.value ? "border-primary bg-primary/5 text-primary" : "border-neutral-200 hover:border-neutral-300 text-muted-foreground"}`}>
+                            className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${questionType === type.value ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/30 text-muted-foreground"}`}>
                             <Icon size={20} />
                             <span className="font-semibold">{type.label}</span>
                         </button>
@@ -54,34 +159,45 @@ export default function CreateBankSoalPage() {
                 })}
             </div>
 
-            {/* Meta */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-neutral-200 p-6">
-                <h2 className="text-lg font-bold mb-4">Informasi Soal</h2>
+            {/* Meta - Changed selects to text inputs */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-2xl border border-border p-6">
+                <h2 className="text-lg font-bold mb-4 text-foreground">Informasi Soal</h2>
                 <div className="grid md:grid-cols-4 gap-4">
-                    <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                        <option value="">Mata Pelajaran</option>
-                        <option value="matematika">Matematika</option>
-                        <option value="bahasa-indonesia">Bahasa Indonesia</option>
-                    </select>
-                    <select value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                        <option value="">Kelas</option>
-                        <option value="7">Kelas 7</option>
-                        <option value="8">Kelas 8</option>
-                    </select>
-                    <Input value={formData.topic} onChange={(e) => setFormData({ ...formData, topic: e.target.value })} placeholder="Topik/Bab" className="h-12 rounded-xl" />
-                    <select value={formData.difficulty} onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                        <option value="easy">Mudah</option>
-                        <option value="medium">Sedang</option>
-                        <option value="hard">Sulit</option>
+                    <Input
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        placeholder="Mata Pelajaran (Matematika, B.Indo, dll)"
+                        className="h-12 rounded-xl"
+                    />
+                    <Input
+                        value={formData.grade}
+                        onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                        placeholder="Kelas (X PPLG 1, XI TMS 2)"
+                        className="h-12 rounded-xl"
+                    />
+                    <Input
+                        value={formData.topic}
+                        onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                        placeholder="Topik/Bab"
+                        className="h-12 rounded-xl"
+                    />
+                    <select
+                        value={formData.difficulty}
+                        onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                        className="h-12 px-4 rounded-xl border border-border bg-card text-foreground"
+                    >
+                        <option value="easy">Mudah (C1-C2)</option>
+                        <option value="medium">Sedang (C3-C4)</option>
+                        <option value="hard">Sulit (C5-C6)</option>
                     </select>
                 </div>
             </motion.div>
 
             {/* Question */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-neutral-200 p-6">
-                <h2 className="text-lg font-bold mb-4">Soal</h2>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-2xl border border-border p-6">
+                <h2 className="text-lg font-bold mb-4 text-foreground">Soal</h2>
                 <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Tuliskan pertanyaan di sini..." rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
 
                 {questionType === "pg" && (
                     <div className="mt-6 space-y-3">
@@ -89,11 +205,19 @@ export default function CreateBankSoalPage() {
                         {options.map((opt, i) => (
                             <div key={i} className="flex items-center gap-3">
                                 <button onClick={() => setCorrectAnswer(i)}
-                                    className={`w-10 h-10 rounded-lg font-bold transition-colors ${correctAnswer === i ? "bg-emerald-500 text-white" : "bg-neutral-100 text-muted-foreground hover:bg-neutral-200"}`}>
-                                    {String.fromCharCode(65 + i)}
+                                    className={`w-10 h-10 rounded-lg font-bold transition-colors ${correctAnswer === i ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                                    {opt.label}
                                 </button>
-                                <Input value={opt} onChange={(e) => { const newOpts = [...options]; newOpts[i] = e.target.value; setOptions(newOpts); }}
-                                    placeholder={`Pilihan ${String.fromCharCode(65 + i)}`} className="flex-1 h-10 rounded-lg" />
+                                <Input
+                                    value={opt.text}
+                                    onChange={(e) => {
+                                        const newOpts = [...options];
+                                        newOpts[i] = { ...newOpts[i], text: e.target.value };
+                                        setOptions(newOpts);
+                                    }}
+                                    placeholder={`Pilihan ${opt.label}`}
+                                    className="flex-1 h-10 rounded-lg"
+                                />
                             </div>
                         ))}
                     </div>
@@ -102,7 +226,7 @@ export default function CreateBankSoalPage() {
                 <div className="mt-6">
                     <p className="font-semibold text-sm text-muted-foreground mb-2">Pembahasan (opsional):</p>
                     <textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="Jelaskan jawaban yang benar..." rows={3}
-                        className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                        className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
                 </div>
             </motion.div>
 
@@ -110,7 +234,21 @@ export default function CreateBankSoalPage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-primary/5 rounded-2xl p-6 border border-primary/20">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center"><Sparkles size={24} className="text-white" /></div>
-                    <div><h3 className="font-bold">Generate dengan AI</h3><p className="text-sm text-muted-foreground">AI akan membuat soal berdasarkan topik</p></div>
+                    <div>
+                        <h3 className="font-bold text-foreground">Generate dengan AI</h3>
+                        <p className="text-sm text-muted-foreground">AI akan membuat soal berdasarkan topik</p>
+                    </div>
+                </div>
+                <div className="flex gap-3 mb-4">
+                    <select
+                        value={formData.model}
+                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                        className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-foreground"
+                    >
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail)</option>
+                        <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                    </select>
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary text-white rounded-xl h-14 text-lg">
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate Soal</>}
@@ -119,7 +257,10 @@ export default function CreateBankSoalPage() {
 
             <div className="flex justify-between">
                 <Link href="/dashboard/bank-soal"><Button variant="outline" className="rounded-xl"><ArrowLeft size={16} className="mr-2" />Batal</Button></Link>
-                <Button className="bg-primary text-white rounded-xl"><Save size={16} className="mr-2" />Simpan Soal</Button>
+                <Button onClick={handleSave} disabled={isSaving} className="bg-primary text-white rounded-xl">
+                    {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                    Simpan Soal
+                </Button>
             </div>
         </div>
     );
