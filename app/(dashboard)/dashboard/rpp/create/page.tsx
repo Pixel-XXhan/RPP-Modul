@@ -81,6 +81,10 @@ export default function CreateRPPPage() {
             };
 
             const response: any = await api.post('/api/v2/export/generate', payload);
+            console.log("RPP Generate Response:", response);
+            if (!response?.download_url) {
+                console.error("RPP Generate Error: download_url is missing in response", response);
+            }
             setResult(response);
         } catch (err: any) {
             console.error(err);
@@ -426,7 +430,15 @@ export default function CreateRPPPage() {
                                         </p>
                                     </div>
                                     <a
-                                        href={result.download_url}
+                                        href={result.download_url || '#'}
+                                        onClick={(e) => {
+                                            console.log("Mocking download with URL:", result.download_url);
+                                            if (!result.download_url) {
+                                                e.preventDefault();
+                                                alert("Error: Download URL tidak tersedia. Silakan cek console browser (F12) untuk detail.");
+                                                console.error("Download URL missing:", result);
+                                            }
+                                        }}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
