@@ -403,7 +403,7 @@ export default function CreateModulAjarPage() {
                                     className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
                                     <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                                    <option value="gemini-pros">Gemini Pro (Detail Tinggi)</option>
+                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
                                 </select>
                             </div>
                             <div>

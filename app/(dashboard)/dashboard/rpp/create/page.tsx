@@ -49,6 +49,7 @@ export default function CreateRPPPage() {
         format: "pdf",
     });
     const [result, setResult] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -57,6 +58,7 @@ export default function CreateRPPPage() {
     const handleGenerate = async () => {
         setIsGenerating(true);
         setResult(null);
+        setError(null);
         try {
             const payload = {
                 mapel: formData.subject,
@@ -80,8 +82,9 @@ export default function CreateRPPPage() {
 
             const response: any = await api.post('/api/v2/export/generate', payload);
             setResult(response);
-        } catch (error) {
-            console.error(error);
+        } catch (err: any) {
+            console.error(err);
+            setError(err?.message || 'Terjadi kesalahan saat membuat dokumen. Silakan coba lagi.');
         } finally {
             setIsGenerating(false);
         }
@@ -336,7 +339,7 @@ export default function CreateRPPPage() {
                                     className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
                                     <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                                    <option value="gemini-pros">Gemini Pro (Detail Tinggi)</option>
+                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
                                 </select>
                             </div>
                             <div>
@@ -430,6 +433,31 @@ export default function CreateRPPPage() {
                                         <Download size={18} />
                                         Download {result.format.toUpperCase()}
                                     </a>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-red-50 rounded-xl p-6 border border-red-200"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                        <span className="text-red-600 text-xl">!</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-red-900">Gagal Membuat Dokumen</h3>
+                                        <p className="text-sm text-red-700">{error}</p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setError(null)}
+                                        className="border-red-300 text-red-700 hover:bg-red-100"
+                                    >
+                                        Tutup
+                                    </Button>
                                 </div>
                             </motion.div>
                         )}
