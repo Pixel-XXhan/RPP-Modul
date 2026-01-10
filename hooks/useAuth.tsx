@@ -56,23 +56,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signIn = async (email: string, password: string) => {
         if (!supabase) return { error: new Error('Supabase not initialized') }
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (!error) {
+
+        try {
+            // Call Backend API to enforce Rate Limiting
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                // Return backend error message (friendly format from HttpExceptionFilter)
+                return { error: new Error(data.message || 'Login gagal') }
+            }
+
+            // Sync session with Supabase Client
+            const { error: sessionError } = await supabase.auth.setSession({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+            })
+
+            if (sessionError) {
+                return { error: sessionError }
+            }
+
             router.push('/dashboard')
+            return { error: null }
+        } catch (err: any) {
+            return { error: new Error(err.message || 'Terjadi kesalahan koneksi') }
         }
-        return { error }
     }
 
     const signUp = async (email: string, password: string, metadata?: { nama_lengkap?: string; institusi?: string }) => {
         if (!supabase) return { error: new Error('Supabase not initialized') }
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: metadata,
-            },
-        })
-        return { error }
+
+        try {
+            // Call Backend API to enforce Rate Limiting
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    nama_lengkap: metadata?.nama_lengkap,
+                    institusi: metadata?.institusi
+                }),
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                return { error: new Error(data.message || 'Registrasi gagal') }
+            }
+
+            return { error: null }
+        } catch (err: any) {
+            return { error: new Error(err.message || 'Terjadi kesalahan koneksi') }
+        }
     }
 
     const signInWithGoogle = async () => {
@@ -103,10 +145,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const resetPassword = async (email: string) => {
         if (!supabase) return { error: new Error('Supabase not initialized') }
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-        })
-        return { error }
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                return { error: new Error(data.message || 'Gagal reset password') }
+            }
+
+            return { error: null }
+        } catch (err: any) {
+            return { error: new Error(err.message || 'Terjadi kesalahan koneksi') }
+        }
     }
 
     return (
