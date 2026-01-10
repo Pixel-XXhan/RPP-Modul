@@ -20,6 +20,7 @@ import {
     Sun,
     Monitor,
 } from "lucide-react";
+import { LogoutConfirmDialog } from "./LogoutConfirmDialog";
 
 interface DashboardHeaderProps {
     onMobileMenuToggle?: () => void;
@@ -28,6 +29,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
     const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const { theme, setTheme } = useTheme();
@@ -210,7 +212,13 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
                                 </Link>
                             </div>
                             <div className="p-2 border-t border-border">
-                                <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-sm text-destructive w-full">
+                                <button
+                                    onClick={() => {
+                                        setShowUserMenu(false);
+                                        setShowLogoutDialog(true);
+                                    }}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-sm text-destructive w-full"
+                                >
                                     <LogOut size={16} />
                                     Keluar
                                 </button>
@@ -230,6 +238,11 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
                     }}
                 />
             )}
+
+            <LogoutConfirmDialog
+                open={showLogoutDialog}
+                onOpenChange={setShowLogoutDialog}
+            />
         </header>
     );
 }

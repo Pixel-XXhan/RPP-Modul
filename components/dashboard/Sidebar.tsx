@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { LogoutConfirmDialog } from "@/components/dashboard/LogoutConfirmDialog";
 import {
     LayoutDashboard,
     FileText,
@@ -321,8 +322,15 @@ function UserProfileSection({ isCollapsed }: { isCollapsed: boolean }) {
     const userEmail = user?.email || 'user@sekolah.id';
     const userInitial = userName.charAt(0).toUpperCase();
 
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
     return (
         <div className="border-t border-neutral-100 dark:border-neutral-800 p-4 shrink-0">
+            <LogoutConfirmDialog
+                open={showLogoutDialog}
+                onOpenChange={setShowLogoutDialog}
+            />
+
             <div className={cn(
                 "flex items-center gap-3",
                 isCollapsed && "justify-center"
@@ -342,7 +350,7 @@ function UserProfileSection({ isCollapsed }: { isCollapsed: boolean }) {
                 )}
                 {!isCollapsed && (
                     <motion.button
-                        onClick={() => signOut()}
+                        onClick={() => setShowLogoutDialog(true)}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"

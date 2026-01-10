@@ -27,6 +27,7 @@ import {
     LogOut,
     ChevronDown,
 } from "lucide-react";
+import { LogoutConfirmDialog } from "@/components/dashboard/LogoutConfirmDialog";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -189,8 +190,14 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
     const userEmail = user?.email || 'user@sekolah.id';
     const userInitial = userName.charAt(0).toUpperCase();
 
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
     return (
         <AnimatePresence>
+            <LogoutConfirmDialog
+                open={showLogoutDialog}
+                onOpenChange={setShowLogoutDialog}
+            />
             {isOpen && (
                 <>
                     {/* Backdrop */}
@@ -283,8 +290,8 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                                 </div>
                                 <button
                                     onClick={() => {
-                                        onClose();
-                                        signOut();
+                                        // Don't close immediately so dialog can be seen
+                                        setShowLogoutDialog(true);
                                     }}
                                     className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"
                                 >
