@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, FileText, Download, AlertCircle } from "lucide-react";
 import { useLKPD } from "@/hooks/useLKPD";
+import { useExport } from "@/hooks/useExport";
 import { api } from "@/lib/api";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import {
 
 export default function CreateLKPDPage() {
     const { generateWithStreaming, streaming } = useLKPD();
+    const { generateAndExport, loading: exportLoading } = useExport();
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Jenjang state for dynamic options
@@ -264,7 +266,7 @@ export default function CreateLKPDPage() {
                                 ) : (
                                     <CheckCircle2 size={24} className="text-emerald-600" />
                                 )}
-                                <div>
+                                <div className="flex-1">
                                     <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
                                         {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
                                     </h3>
@@ -274,6 +276,34 @@ export default function CreateLKPDPage() {
                                             : "Proses generate selesai. Silakan review hasil di bawah."}
                                     </p>
                                 </div>
+                                {streaming.isStreaming && (
+                                    <Button
+                                        onClick={streaming.stop}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="h-8 rounded-lg"
+                                    >
+                                        Stop Generation
+                                    </Button>
+                                )}
+                                {!streaming.isStreaming && streaming.content && (
+                                    <Button
+                                        onClick={() => generateAndExport({
+                                            mapel: formData.subject,
+                                            topik: formData.title,
+                                            kelas: formData.grade,
+                                            document_type: 'lkpd',
+                                            format: 'docx',
+                                            kurikulum: 'merdeka',
+                                            content: streaming.content
+                                        })}
+                                        disabled={exportLoading}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
+                                    >
+                                        {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                        Download Docx
+                                    </Button>
+                                )}
                             </div>
 
                             {/* Markdown Preview */}

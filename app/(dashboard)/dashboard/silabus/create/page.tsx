@@ -20,6 +20,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { useSilabus } from "@/hooks/useSilabus";
+import { useExport } from "@/hooks/useExport";
 import { api } from "@/lib/api";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ interface WeekData {
 
 export default function CreateSilabusPage() {
     const { generateWithStreaming, streaming } = useSilabus();
+    const { generateAndExport, loading: exportLoading } = useExport();
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Jenjang state for dynamic options
@@ -308,6 +310,72 @@ export default function CreateSilabusPage() {
                 >
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate Silabus</>}
                 </Button>
+
+                {/* Streaming / Generated Content Area */}
+                {(streaming.isStreaming || streaming.content) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8 space-y-4"
+                    >
+                        <div className={cn(
+                            "rounded-xl p-6 border transition-colors",
+                            streaming.isStreaming
+                                ? "bg-blue-50/50 border-blue-200"
+                                : "bg-emerald-50/50 border-emerald-200"
+                        )}>
+                            <div className="flex items-center gap-3 mb-4">
+                                {streaming.isStreaming ? (
+                                    <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 size={24} className="text-emerald-600" />
+                                )}
+                                <div className="flex-1">
+                                    <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                        {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                    </h3>
+                                    <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                        {streaming.isStreaming
+                                            ? "AI sedang menyusun Silabus..."
+                                            : "Proses generate selesai. Silakan review hasil di bawah."}
+                                    </p>
+                                </div>
+                                {streaming.isStreaming && (
+                                    <Button
+                                        onClick={streaming.stop}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="h-8 rounded-lg"
+                                    >
+                                        Stop Generation
+                                    </Button>
+                                )}
+                                {!streaming.isStreaming && streaming.content && (
+                                    <Button
+                                        onClick={() => generateAndExport({
+                                            mapel: formData.subject,
+                                            topik: `${weeks.map(w => w.topic).join(", ")} (Semester ${formData.semester} - ${formData.year})`,
+                                            kelas: formData.grade,
+                                            document_type: 'silabus',
+                                            format: 'docx',
+                                            kurikulum: 'merdeka',
+                                            content: streaming.content
+                                        })}
+                                        disabled={exportLoading}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
+                                    >
+                                        {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                        Download Docx
+                                    </Button>
+                                )}
+                            </div>
+
+                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <MarkdownViewer content={streaming.content} />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
 
             </motion.div>
