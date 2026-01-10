@@ -27,7 +27,9 @@ import {
     LogOut,
     ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 interface MobileNavProps {
     isOpen: boolean;
@@ -174,6 +176,18 @@ function MobileNavSection({
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
     const pathname = usePathname();
+    const { user, signOut } = useAuth();
+    const { profile, fetchProfile } = useProfile();
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchProfile();
+        }
+    }, [isOpen, fetchProfile]);
+
+    const userName = profile?.nama || user?.email?.split('@')[0] || 'Pengguna';
+    const userEmail = user?.email || 'user@sekolah.id';
+    const userInitial = userName.charAt(0).toUpperCase();
 
     return (
         <AnimatePresence>
@@ -261,17 +275,21 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                         <div className="border-t border-border p-4 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
-                                    A
+                                    {userInitial}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-foreground truncate">Arief Fajar</p>
-                                    <p className="text-xs text-muted-foreground truncate">arief@sekolah.id</p>
+                                    <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
                                 </div>
-                                <Link href="/login" onClick={onClose}>
-                                    <button className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors">
-                                        <LogOut size={16} />
-                                    </button>
-                                </Link>
+                                <button
+                                    onClick={() => {
+                                        onClose();
+                                        signOut();
+                                    }}
+                                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                >
+                                    <LogOut size={16} />
+                                </button>
                             </div>
                         </div>
                     </motion.div>

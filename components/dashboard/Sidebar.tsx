@@ -310,7 +310,7 @@ export function DashboardSidebar() {
 
 // Separate component to use hooks
 function UserProfileSection({ isCollapsed }: { isCollapsed: boolean }) {
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
     const { profile, fetchProfile } = useProfile();
 
     useEffect(() => {
@@ -341,16 +341,15 @@ function UserProfileSection({ isCollapsed }: { isCollapsed: boolean }) {
                     </motion.div>
                 )}
                 {!isCollapsed && (
-                    <Link href="/login">
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"
-                            title="Keluar"
-                        >
-                            <LogOut size={16} />
-                        </motion.button>
-                    </Link>
+                    <motion.button
+                        onClick={() => signOut()}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"
+                        title="Keluar"
+                    >
+                        <LogOut size={16} />
+                    </motion.button>
                 )}
             </div>
         </div>
