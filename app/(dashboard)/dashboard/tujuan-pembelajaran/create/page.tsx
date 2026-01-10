@@ -12,6 +12,7 @@ import { useTujuanPembelajaran } from "@/hooks/useTujuanPembelajaran";
 import { useExport } from "@/hooks/useExport";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import { cn } from "@/lib/utils";
+import { AI_MODEL_OPTIONS } from "@/lib/form-constants";
 
 export default function CreateTPPage() {
     const router = useRouter();
@@ -190,9 +191,9 @@ export default function CreateTPPage() {
                         onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                         className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-foreground"
                     >
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail)</option>
-                        <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                        {AI_MODEL_OPTIONS.map((m: any) => (
+                            <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                        ))}
                     </select>
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary text-white rounded-xl h-14 text-lg">
@@ -239,22 +240,41 @@ export default function CreateTPPage() {
                                     </Button>
                                 )}
                                 {!streaming.isStreaming && streaming.content && (
-                                    <Button
-                                        onClick={() => generateAndExport({
-                                            mapel: formData.subject,
-                                            topik: formData.topik,
-                                            kelas: formData.grade,
-                                            document_type: 'tujuan_pembelajaran',
-                                            format: 'docx',
-                                            kurikulum: 'merdeka',
-                                            content: streaming.content
-                                        })}
-                                        disabled={exportLoading}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
-                                    >
-                                        {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                        Download Docx
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => generateAndExport({
+                                                mapel: formData.subject,
+                                                topik: formData.topik,
+                                                kelas: formData.grade,
+                                                document_type: 'tujuan_pembelajaran',
+                                                format: 'pdf',
+                                                kurikulum: 'merdeka',
+                                                content: streaming.content
+                                            })}
+                                            disabled={exportLoading}
+                                            variant="outline"
+                                            className="h-8 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                        >
+                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                            PDF
+                                        </Button>
+                                        <Button
+                                            onClick={() => generateAndExport({
+                                                mapel: formData.subject,
+                                                topik: formData.topik,
+                                                kelas: formData.grade,
+                                                document_type: 'tujuan_pembelajaran',
+                                                format: 'docx',
+                                                kurikulum: 'merdeka',
+                                                content: streaming.content
+                                            })}
+                                            disabled={exportLoading}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
+                                        >
+                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                            Word (Docx)
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
 

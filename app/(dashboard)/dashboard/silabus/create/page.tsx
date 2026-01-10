@@ -351,22 +351,41 @@ export default function CreateSilabusPage() {
                                     </Button>
                                 )}
                                 {!streaming.isStreaming && streaming.content && (
-                                    <Button
-                                        onClick={() => generateAndExport({
-                                            mapel: formData.subject,
-                                            topik: `${weeks.map(w => w.topic).join(", ")} (Semester ${formData.semester} - ${formData.year})`,
-                                            kelas: formData.grade,
-                                            document_type: 'silabus',
-                                            format: 'docx',
-                                            kurikulum: 'merdeka',
-                                            content: streaming.content
-                                        })}
-                                        disabled={exportLoading}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
-                                    >
-                                        {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                        Download Docx
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => generateAndExport({
+                                                mapel: formData.subject,
+                                                topik: `${weeks.map(w => w.topic).join(", ")} (Semester ${formData.semester} - ${formData.year})`,
+                                                kelas: formData.grade,
+                                                document_type: 'silabus',
+                                                format: 'pdf',
+                                                kurikulum: 'merdeka',
+                                                content: streaming.content
+                                            })}
+                                            disabled={exportLoading}
+                                            variant="outline"
+                                            className="h-8 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                        >
+                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                            PDF
+                                        </Button>
+                                        <Button
+                                            onClick={() => generateAndExport({
+                                                mapel: formData.subject,
+                                                topik: `${weeks.map(w => w.topic).join(", ")} (Semester ${formData.semester} - ${formData.year})`,
+                                                kelas: formData.grade,
+                                                document_type: 'silabus',
+                                                format: 'docx',
+                                                kurikulum: 'merdeka',
+                                                content: streaming.content
+                                            })}
+                                            disabled={exportLoading}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
+                                        >
+                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                            Word (Docx)
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
 
