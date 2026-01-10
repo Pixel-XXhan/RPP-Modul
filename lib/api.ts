@@ -108,7 +108,8 @@ export async function streamingRequest(
     data: unknown,
     onChunk: (content: string) => void,
     onDone?: () => void,
-    onError?: (error: Error) => void
+    onError?: (error: Error) => void,
+    signal?: AbortSignal
 ): Promise<void> {
     const supabase = getSupabase()
 
@@ -130,6 +131,7 @@ export async function streamingRequest(
                 }),
             },
             body: JSON.stringify(data),
+            signal,
         })
 
         if (!response.ok) {

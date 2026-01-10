@@ -19,7 +19,10 @@ import {
     Download,
     AlertCircle,
 } from "lucide-react";
+import { useSilabus } from "@/hooks/useSilabus";
 import { api } from "@/lib/api";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -39,6 +42,7 @@ interface WeekData {
 }
 
 export default function CreateSilabusPage() {
+    const { generateWithStreaming, streaming } = useSilabus();
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Jenjang state for dynamic options
@@ -98,16 +102,14 @@ export default function CreateSilabusPage() {
                 mapel: formData.subject,
                 topik: formData.title,
                 kelas: formData.grade,
+                semester: formData.semester ? parseInt(formData.semester) : 1,
                 kurikulum: "Kurikulum Merdeka",
-                alokasi_waktu: weeks.length * 4, // Estimate
                 model: formData.model,
-                format: formData.format,
-                document_type: "silabus",
-                kegiatan_pembelajaran: kegiatanMap
+                rincian_minggu: kegiatanMap
             };
 
-            const response: any = await api.post('/api/v2/export/generate', payload);
-            setResult(response);
+            await generateWithStreaming(payload);
+
         } catch (error) {
             console.error(error);
         } finally {
@@ -307,34 +309,7 @@ export default function CreateSilabusPage() {
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate Silabus</>}
                 </Button>
 
-                {result && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-6 bg-emerald-50 rounded-xl p-6 border border-emerald-200"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                                <CheckCircle2 className="text-emerald-600" size={24} />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-emerald-900">Silabus Siap!</h3>
-                                <p className="text-sm text-emerald-700">
-                                    Silabus Anda telah berhasil digenerate.
-                                </p>
-                            </div>
-                            <a
-                                href={result.download_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                            >
-                                <Download size={18} />
-                                Download {(result.format || 'pdf').toUpperCase()}
-                            </a>
-                        </div>
-                    </motion.div>
-                )}
+
             </motion.div>
 
             <div className="flex justify-between">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { api, streamingRequest } from '@/lib/api'
 import { PaginationParams } from '@/types/database'
 
@@ -159,6 +159,7 @@ interface UseStreamingReturn {
     isStreaming: boolean
     error: string | null
     startStreaming: (endpoint: string, data: unknown) => Promise<void>
+    stop: () => void
     reset: () => void
 }
 
@@ -166,8 +167,17 @@ export function useStreaming(): UseStreamingReturn {
     const [content, setContent] = useState('')
     const [isStreaming, setIsStreaming] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const abortControllerRef = useRef<AbortController | null>(null)
 
     const startStreaming = useCallback(async (endpoint: string, data: unknown) => {
+        // Abort previous request if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+        }
+
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
         setContent('')
         setIsStreaming(true)
         setError(null)
@@ -176,19 +186,40 @@ export function useStreaming(): UseStreamingReturn {
             endpoint,
             data,
             (chunk) => setContent(prev => prev + chunk),
-            () => setIsStreaming(false),
+            () => {
+                setIsStreaming(false)
+                abortControllerRef.current = null
+            },
             (err) => {
+                if (err.name === 'AbortError') {
+                    console.log('Stream aborted')
+                    return
+                }
                 setError(err.message)
                 setIsStreaming(false)
-            }
+                abortControllerRef.current = null
+            },
+            controller.signal
         )
+    }, [])
+
+    const stop = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            setIsStreaming(false)
+            abortControllerRef.current = null
+        }
     }, [])
 
     const reset = useCallback(() => {
         setContent('')
         setIsStreaming(false)
         setError(null)
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            abortControllerRef.current = null
+        }
     }, [])
 
-    return { content, isStreaming, error, startStreaming, reset }
+    return { content, isStreaming, error, startStreaming, stop, reset }
 }

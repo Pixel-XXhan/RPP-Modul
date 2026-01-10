@@ -18,8 +18,12 @@ import {
     ChevronUp,
     GraduationCap,
     AlertCircle,
+    CheckCircle2
 } from "lucide-react";
+import { useATP } from "@/hooks/useATP";
 import { api } from "@/lib/api";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -31,6 +35,7 @@ import {
 
 export default function CreateATPPage() {
     const router = useRouter();
+    const { generateWithStreaming, streaming } = useATP();
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -99,27 +104,24 @@ export default function CreateATPPage() {
         setIsGenerating(true);
         setError(null);
         try {
-            const result = await api.post<any>('/api/v2/atp/generate', {
+            const payload = {
                 mapel: formData.subject,
-                fase: formData.phase,
-                capaian_pembelajaran: formData.capaian_pembelajaran || formData.subject,
-                model: formData.model
-            });
+                topik: formData.title,
+                kelas: formData.grade,
+                kurikulum: "Kurikulum Merdeka",
+                model: formData.model,
+                capaian_pembelajaran: formData.capaian_pembelajaran,
+                tujuan_pembelajaran: tujuanPembelajaran.map(tp => ({
+                    deskripsi: tp.deskripsi,
+                    indikator: tp.indicators
+                }))
+            };
 
-            if (result.tujuan_pembelajaran && Array.isArray(result.tujuan_pembelajaran)) {
-                setTujuanPembelajaran(result.tujuan_pembelajaran.map((tp: any, i: number) => ({
-                    id: String(i + 1),
-                    urutan: tp.urutan || i + 1,
-                    deskripsi: tp.deskripsi || "",
-                    indicators: tp.indikator || []
-                })));
-            }
-            if (result.judul) {
-                setFormData(prev => ({ ...prev, title: result.judul }));
-            }
+            await generateWithStreaming(payload);
+
         } catch (err: any) {
             console.error(err);
-            setError(err?.message || "Gagal generate ATP. Silakan coba lagi.");
+            setError("Gagal membuat ATP. Silakan coba lagi.");
         } finally {
             setIsGenerating(false);
         }

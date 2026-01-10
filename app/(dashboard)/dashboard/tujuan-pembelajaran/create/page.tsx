@@ -6,11 +6,15 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Save, Loader2, Plus, Trash2, GraduationCap, AlertCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, Save, Loader2, Plus, Trash2, GraduationCap, AlertCircle, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useTujuanPembelajaran } from "@/hooks/useTujuanPembelajaran";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 
 export default function CreateTPPage() {
     const router = useRouter();
+    const { generateWithStreaming, streaming } = useTujuanPembelajaran();
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -40,7 +44,7 @@ export default function CreateTPPage() {
         setIsGenerating(true);
         setError(null);
         try {
-            const result = await api.post<any>('/api/v2/tp/generate', {
+            await generateWithStreaming({
                 mapel: formData.subject,
                 topik: formData.topik,
                 kelas: formData.grade || "Umum",
@@ -48,16 +52,9 @@ export default function CreateTPPage() {
                 model: formData.model
             });
 
-            if (result.tujuan_pembelajaran && result.tujuan_pembelajaran.length > 0) {
-                const tp = result.tujuan_pembelajaran[0];
-                setFormData(prev => ({ ...prev, title: tp.deskripsi || "" }));
-                if (tp.indikator && Array.isArray(tp.indikator)) {
-                    setIndicators(tp.indikator);
-                }
-            }
         } catch (err: any) {
             console.error(err);
-            setError(err?.message || "Gagal generate tujuan pembelajaran. Silakan coba lagi.");
+            setError("Gagal generate tujuan pembelajaran. Silakan coba lagi.");
         } finally {
             setIsGenerating(false);
         }
@@ -199,6 +196,45 @@ export default function CreateTPPage() {
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary text-white rounded-xl h-14 text-lg">
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate TP</>}
                 </Button>
+
+                {/* Streaming / Generated Content Area */}
+                {(streaming.isStreaming || streaming.content) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8 space-y-4"
+                    >
+                        <div className={cn(
+                            "rounded-xl p-6 border transition-colors",
+                            streaming.isStreaming
+                                ? "bg-blue-50/50 border-blue-200"
+                                : "bg-emerald-50/50 border-emerald-200"
+                        )}>
+                            <div className="flex items-center gap-3 mb-4">
+                                {streaming.isStreaming ? (
+                                    <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 size={24} className="text-emerald-600" />
+                                )}
+                                <div>
+                                    <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                        {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                    </h3>
+                                    <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                        {streaming.isStreaming
+                                            ? "AI sedang menyusun tujuan pembelajaran..."
+                                            : "Proses generate selesai. Silakan review hasil di bawah."}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Markdown Preview */}
+                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <MarkdownViewer content={streaming.content} />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
             </motion.div>
 
             <div className="flex justify-between">

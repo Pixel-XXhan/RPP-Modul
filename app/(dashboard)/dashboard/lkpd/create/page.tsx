@@ -6,7 +6,10 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, FileText, Download, AlertCircle } from "lucide-react";
+import { useLKPD } from "@/hooks/useLKPD";
 import { api } from "@/lib/api";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -17,6 +20,7 @@ import {
 } from "@/lib/form-constants";
 
 export default function CreateLKPDPage() {
+    const { generateWithStreaming, streaming } = useLKPD();
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Jenjang state for dynamic options
@@ -66,19 +70,14 @@ export default function CreateLKPDPage() {
                 topik: formData.title || formData.topic,
                 kelas: formData.grade,
                 kurikulum: "Kurikulum Merdeka",
-                alokasi_waktu: 60,
                 model: formData.model,
-                format: formData.format,
-                document_type: "lkpd",
-                // Manual Overrides
                 materi_pokok: formData.topic,
                 kegiatan_pembelajaran: {
                     soal: questions.map(q => q.question).join("\n\n")
                 }
             };
 
-            const response: any = await api.post('/api/v2/export/generate', payload);
-            setResult(response);
+            await generateWithStreaming(payload);
         } catch (error) {
             console.error(error);
         } finally {
@@ -98,54 +97,123 @@ export default function CreateLKPDPage() {
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-neutral-200 p-6">
                 <h2 className="text-lg font-bold mb-6">Informasi Dasar</h2>
-                <div className="space-y-4">
-                    <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Judul LKPD" className="h-12 rounded-xl" />
-                    <div className="grid md:grid-cols-3 gap-4">
-                        <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                            <option value="">Mata Pelajaran</option>
-                            <option value="matematika">Matematika</option>
-                            <option value="bahasa-indonesia">Bahasa Indonesia</option>
-                            <option value="ipa">IPA</option>
+
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Jenjang Pendidikan</label>
+                        <select
+                            value={jenjang}
+                            onChange={(e) => {
+                                setJenjang(e.target.value);
+                                setFormData(prev => ({ ...prev, grade: "", subject: "" }));
+                            }}
+                            className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="">Pilih Jenjang</option>
+                            {JENJANG_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
-                        <select value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                            <option value="">Kelas</option>
-                            <option value="7">Kelas 7</option>
-                            <option value="8">Kelas 8</option>
+                    </div>
+
+                    {jenjang === "SMK" && (
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">Bidang Keahlian</label>
+                            <select
+                                value={bidangKeahlian}
+                                onChange={(e) => setBidangKeahlian(e.target.value)}
+                                className="w-full h-12 px-4 rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            >
+                                <option value="">Pilih Bidang</option>
+                                {BIDANG_KEAHLIAN_SMK.map((b) => (
+                                    <option key={b.value} value={b.value}>
+                                        {b.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Kelas / Fase</label>
+                        <select
+                            value={formData.grade}
+                            onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                            disabled={!jenjang}
+                            className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="">Pilih Kelas</option>
+                            {kelasOptions.map((cls: any) => (
+                                <option key={cls.value} value={cls.value}>{cls.label} {fase ? `(Fase ${fase})` : ''}</option>
+                            ))}
                         </select>
-                        <Input value={formData.topic} onChange={(e) => setFormData({ ...formData, topic: e.target.value })} placeholder="Topik Materi" className="h-12 rounded-xl" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Mata Pelajaran</label>
+                        <select
+                            value={formData.subject}
+                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            disabled={!jenjang}
+                            className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="">Pilih Mata Pelajaran</option>
+                            {mapelOptions.map((subject: any) => (
+                                <option key={subject.value} value={subject.value}>{subject.label}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
-            </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-neutral-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold">Daftar Soal / Instruksi</h2>
-                    <Button onClick={addQuestion} variant="outline" className="rounded-xl"><Plus size={16} className="mr-2" />Tambah</Button>
-                </div>
-                <div className="space-y-3">
-                    {questions.map((q, i) => (
-                        <div key={q.id} className="flex items-start gap-3 p-4 bg-neutral-50 rounded-xl">
-                            <span className="mt-2 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">{i + 1}</span>
-                            <textarea
-                                value={q.question}
-                                onChange={(e) => updateQuestion(q.id, e.target.value)}
-                                placeholder="Tulis instruksi atau soal..."
-                                className="flex-1 min-h-[80px] p-3 rounded-lg border border-neutral-200 resize-y"
-                            />
-                            <button onClick={() => removeQuestion(q.id)} className="p-2 hover:bg-red-100 rounded-lg text-red-500 mt-1"><Trash2 size={16} /></button>
-                        </div>
-                    ))}
-                </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-primary/5 rounded-2xl p-6 border border-primary/20">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center"><Sparkles size={24} className="text-white" /></div>
-                    <div><h3 className="font-bold">Generate dengan AI</h3><p className="text-sm text-muted-foreground">AI akan menyusun LKPD lengkap</p></div>
+                <div className="space-y-4 mb-6">
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Judul / Topik LKPD</label>
+                        <Input
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value, topic: e.target.value })}
+                            placeholder="Contoh: Sistem Pencernaan Manusia"
+                            className="h-12 rounded-xl"
+                        />
+                    </div>
                 </div>
 
-                {/* Configuration */}
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                {/* Questions Section */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <label className="block text-lg font-bold text-foreground">Daftar Pertanyaan / Instruksi</label>
+                        <Button variant="outline" onClick={addQuestion} size="sm" className="rounded-xl">
+                            <Plus size={16} className="mr-2" />
+                            Tambah Soal
+                        </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {questions.map((q, idx) => (
+                            <div key={q.id} className="flex gap-3">
+                                <span className="flex items-center justify-center w-8 h-12 font-bold text-muted-foreground">{idx + 1}.</span>
+                                <Input
+                                    value={q.question}
+                                    onChange={(e) => updateQuestion(q.id, e.target.value)}
+                                    placeholder="Tulis instruksi atau pertanyaan..."
+                                    className="h-12 rounded-xl flex-1"
+                                />
+                                {questions.length > 1 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeQuestion(q.id)}
+                                        className="h-12 w-12 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl"
+                                    >
+                                        <Trash2 size={18} />
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* AI Model Selection */}
+                <div className="grid md:grid-cols-2 gap-4 mb-8 pt-6 border-t border-neutral-100">
                     <div>
                         <label className="block text-sm font-medium text-foreground mb-2">Model AI</label>
                         <select
@@ -154,7 +222,9 @@ export default function CreateLKPDPage() {
                             className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
                         >
                             {AI_MODEL_OPTIONS.map((m: any) => (
-                                <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                                <option key={m.value} value={m.value}>
+                                    {m.label} {m.recommended ? '⭐' : ''} {m.premium ? '💎' : ''}
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -175,31 +245,41 @@ export default function CreateLKPDPage() {
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate LKPD</>}
                 </Button>
 
-                {result && (
+                {/* Streaming / Generated Content Area */}
+                {(streaming.isStreaming || streaming.content) && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-6 bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                        className="mt-8 space-y-4"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                                <CheckCircle2 className="text-emerald-600" size={24} />
+                        <div className={cn(
+                            "rounded-xl p-6 border transition-colors",
+                            streaming.isStreaming
+                                ? "bg-blue-50/50 border-blue-200"
+                                : "bg-emerald-50/50 border-emerald-200"
+                        )}>
+                            <div className="flex items-center gap-3 mb-4">
+                                {streaming.isStreaming ? (
+                                    <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 size={24} className="text-emerald-600" />
+                                )}
+                                <div>
+                                    <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                        {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                    </h3>
+                                    <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                        {streaming.isStreaming
+                                            ? "AI sedang menyusun LKPD..."
+                                            : "Proses generate selesai. Silakan review hasil di bawah."}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-emerald-900">LKPD Siap!</h3>
-                                <p className="text-sm text-emerald-700">
-                                    LKPD berhasil digenerate dan siap diunduh.
-                                </p>
+
+                            {/* Markdown Preview */}
+                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <MarkdownViewer content={streaming.content} />
                             </div>
-                            <a
-                                href={result.download_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                            >
-                                <Download size={18} />
-                                Download {(result.format || 'pdf').toUpperCase()}
-                            </a>
                         </div>
                     </motion.div>
                 )}

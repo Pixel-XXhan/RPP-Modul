@@ -1,10 +1,14 @@
 "use client";
 
+
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import {
     ArrowLeft,
     ArrowRight,
@@ -20,6 +24,8 @@ import {
     Download,
     AlertCircle,
 } from "lucide-react";
+import { useRPP } from "@/hooks/useRPP";
+import { useExport } from "@/hooks/useExport";
 import { api } from "@/lib/api";
 import {
     JENJANG_OPTIONS,
@@ -40,6 +46,9 @@ const steps = [
 ];
 
 export default function CreateRPPPage() {
+    const { generateWithStreaming, streaming, create } = useRPP();
+    const { generateAndExport, loading: exportLoading } = useExport();
+    const router = useRouter();
     const [currentStep, setCurrentStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -65,7 +74,7 @@ export default function CreateRPPPage() {
         model: "gemini-2.5-flash",
         format: "pdf",
     });
-    const [result, setResult] = useState<any>(null);
+
     const [error, setError] = useState<string | null>(null);
 
     // Dynamic options based on jenjang
@@ -89,8 +98,8 @@ export default function CreateRPPPage() {
         }
 
         setIsGenerating(true);
-        setResult(null);
-        setError(null);
+        // Note: result and error are now managed by useRPP hook
+
         try {
             const payload = {
                 mapel: formData.subject,
@@ -98,29 +107,19 @@ export default function CreateRPPPage() {
                 kelas: formData.grade,
                 kurikulum: "Kurikulum Merdeka",
                 alokasi_waktu: formData.duration ? parseInt(formData.duration) * 40 : 90,
-                model: formData.model,
-                format: formData.format,
-                document_type: "rpp",
-                // Manual Overrides
-                materi_pokok: formData.materi,
-                metode: formData.method,
-                tujuan_pembelajaran: formData.tujuanPembelajaran ? [formData.tujuanPembelajaran] : [],
-                kegiatan_pembelajaran: {
-                    pendahuluan: formData.pendahuluan,
-                    inti: formData.inti,
-                    penutup: formData.penutup
-                }
+                tujuan_pembelajaran: formData.tujuanPembelajaran,
+                kegiatan_pembelajaran: formData.inti,
+                penilaian: formData.penutup,
+                model: formData.model
             };
 
-            const response: any = await api.post('/api/v2/export/generate', payload);
-            console.log("RPP Generate Response:", response);
-            if (!response?.download_url) {
-                console.error("RPP Generate Error: download_url is missing in response", response);
-            }
-            setResult(response);
+            // Use hooks for generation which handles OpenRouter/Gemini routing
+            await generateWithStreaming(payload);
+
         } catch (err: any) {
-            console.error(err);
-            setError(err?.message || 'Terjadi kesalahan saat membuat dokumen. Silakan coba lagi.');
+            console.error("Generation failed:", err);
+            // Error is handled by apiError from hook, but we can also set local error if needed
+            // however, we'll rely on hook's error
         } finally {
             setIsGenerating(false);
         }
@@ -509,42 +508,87 @@ export default function CreateRPPPage() {
                             </Button>
                         </div>
 
-                        {result && (
+                        {/* Streaming / Generated Content Area */}
+                        {(streaming.isStreaming || streaming.content) && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                                className="space-y-4"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                                        <CheckCircle2 className="text-emerald-600" size={24} />
+                                <div className={cn(
+                                    "rounded-xl p-6 border transition-colors",
+                                    streaming.isStreaming
+                                        ? "bg-blue-50/50 border-blue-200"
+                                        : "bg-emerald-50/50 border-emerald-200"
+                                )}>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        {streaming.isStreaming ? (
+                                            <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                        ) : (
+                                            <CheckCircle2 size={24} className="text-emerald-600" />
+                                        )}
+                                        <div>
+                                            <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                                {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                            </h3>
+                                            <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                                {streaming.isStreaming
+                                                    ? "AI sedang menyusun RPP..."
+                                                    : "Proses generate selesai. Silakan review hasil di bawah."}
+                                            </p>
+                                        </div>
+                                        {streaming.isStreaming && (
+                                            <Button
+                                                onClick={streaming.stop}
+                                                variant="destructive"
+                                                size="sm"
+                                                className="h-8 rounded-lg"
+                                            >
+                                                Stop Generation
+                                            </Button>
+                                        )}
+                                        {!streaming.isStreaming && streaming.content && (
+                                            <Button
+                                                onClick={() => generateAndExport({
+                                                    mapel: formData.subject,
+                                                    topik: formData.title,
+                                                    kelas: formData.grade,
+                                                    document_type: 'rpp',
+                                                    format: 'docx',
+                                                    kurikulum: 'merdeka',
+                                                    alokasi_waktu: parseInt(formData.duration) || 2
+                                                })}
+                                                disabled={exportLoading}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
+                                            >
+                                                {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                                Download Docx
+                                            </Button>
+                                        )}
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-emerald-900">Dokumen Siap!</h3>
-                                        <p className="text-sm text-emerald-700">
-                                            RPP Anda telah berhasil digenerate dan siap diunduh.
-                                        </p>
+
+                                    {/* Markdown Preview */}
+                                    <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                        <MarkdownViewer content={streaming.content} />
                                     </div>
-                                    <a
-                                        href={result.download_url || '#'}
-                                        onClick={(e) => {
-                                            console.log("Mocking download with URL:", result.download_url);
-                                            if (!result.download_url) {
-                                                e.preventDefault();
-                                                alert("Error: Download URL tidak tersedia. Silakan cek console browser (F12) untuk detail.");
-                                                console.error("Download URL missing:", result);
-                                            }
-                                        }}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                                    >
-                                        <Download size={18} />
-                                        Download {(result.format || 'pdf').toUpperCase()}
-                                    </a>
                                 </div>
+
+                                {/* Action Buttons (Show only when not streaming and content exists) */}
+                                {!streaming.isStreaming && streaming.content && (
+                                    <div className="flex justify-end gap-3">
+                                        <Button variant="outline">
+                                            Copy Text
+                                        </Button>
+                                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                                            <Save size={18} className="mr-2" />
+                                            Simpan ke Database
+                                        </Button>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
+
+                        {/* Fallback for API Error */}
 
                         {error && (
                             <motion.div

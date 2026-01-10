@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useResource } from './useResource'
+import { useResource, useStreaming } from './useResource'
 import { api } from '@/lib/api'
+import { getProviderFromModel } from '@/lib/form-constants'
+import { constructPrompt } from '@/lib/utils'
 import { BankSoal, BankSoalStatistics, TipeSoal, TingkatKesulitan } from '@/types/database'
 
 interface GenerateSoalInput {
@@ -18,6 +20,7 @@ interface GenerateSoalInput {
 
 export function useBankSoal() {
     const resource = useResource<BankSoal>({ endpoint: '/api/v2/bank-soal' })
+    const streaming = useStreaming()
     const [statistics, setStatistics] = useState<BankSoalStatistics | null>(null)
     const [statsLoading, setStatsLoading] = useState(false)
 
@@ -34,7 +37,41 @@ export function useBankSoal() {
     }, [])
 
     const generateSoal = async (input: GenerateSoalInput) => {
-        return api.post<{ count: number; soal: BankSoal[] }>('/api/v2/bank-soal/generate', input)
+        const provider = getProviderFromModel(input.model || '')
+        const endpoint = provider === 'openrouter'
+            ? '/api/v1/openrouter/chat' // POST (non-stream)
+            : '/api/v2/bank-soal/generate'
+
+        let payload = input
+        if (provider === 'openrouter') {
+            const prompt = constructPrompt('bank_soal', input as any)
+            payload = {
+                model: input.model,
+                messages: [{ role: 'user', content: prompt }],
+                stream: false
+            } as any
+        }
+
+        return api.post<{ count: number; soal: BankSoal[] }>(endpoint, payload)
+    }
+
+    const generateWithStreaming = async (input: GenerateSoalInput) => {
+        const provider = getProviderFromModel(input.model || '')
+        const endpoint = provider === 'openrouter'
+            ? '/api/v1/openrouter/chat/stream'
+            : '/api/v2/bank-soal/generate/stream'
+
+        let payload = input
+        if (provider === 'openrouter') {
+            const prompt = constructPrompt('bank_soal', input as any)
+            payload = {
+                model: input.model,
+                messages: [{ role: 'user', content: prompt }],
+                stream: true
+            } as any
+        }
+
+        await streaming.startStreaming(endpoint, payload as any)
     }
 
     const bulkCreate = async (soal: Partial<BankSoal>[]) => {
@@ -45,8 +82,10 @@ export function useBankSoal() {
         ...resource,
         statistics,
         statsLoading,
+        streaming,
         fetchStatistics,
         generateSoal,
+        generateWithStreaming,
         bulkCreate,
     }
 }

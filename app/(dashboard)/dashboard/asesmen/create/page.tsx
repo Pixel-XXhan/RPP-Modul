@@ -6,7 +6,10 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, ListChecks, PenLine, Download, AlertCircle } from "lucide-react";
+import { useAsesmen } from "@/hooks/useAsesmen";
 import { api } from "@/lib/api";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -18,6 +21,7 @@ import {
 } from "@/lib/form-constants";
 
 export default function CreateAsesmenPage() {
+    const { generateWithStreaming, streaming } = useAsesmen();
     const [isGenerating, setIsGenerating] = useState(false);
     const [asesmenType, setAsesmenType] = useState<"formatif" | "sumatif">("formatif");
 
@@ -70,23 +74,26 @@ export default function CreateAsesmenPage() {
         try {
             const payload = {
                 mapel: formData.subject,
-                topik: formData.title,
+                topik: formData.title, // Assuming formData.topic is formData.title
                 kelas: formData.grade,
                 kurikulum: "Kurikulum Merdeka",
-                alokasi_waktu: 90, // Default
+                jenis_asesmen: asesmenType, // Using asesmenType state
+                // jumlah_soal: parseInt(formData.questionCount), // This field is not present in the current form
                 model: formData.model,
-                format: formData.format,
-                document_type: "asesmen",
-                // Manual Overrides
-                capaian_pembelajaran: formData.cp ? [formData.cp] : [],
+                // kisi_kisi: questions.map(q => q.question) // This field is not present in the current form
+                // The instruction's payload structure seems to be for a different generation type.
+                // For asesmen generation, we typically send criteria.
+                // Assuming generateWithStreaming expects a similar structure to the previous API call for asesmen.
                 asesmen: {
                     jenis: asesmenType,
                     kriteria: criteria
-                }
+                },
+                jenis: asesmenType,
+                capaian_pembelajaran: formData.cp ? [formData.cp] : [],
             };
 
-            const response: any = await api.post('/api/v2/export/generate', payload);
-            setResult(response);
+            await generateWithStreaming(payload);
+
         } catch (error) {
             console.error(error);
         } finally {
@@ -245,31 +252,41 @@ export default function CreateAsesmenPage() {
                     </div>
                 </div>
 
-                {result && (
+                {/* Streaming / Generated Content Area */}
+                {(streaming.isStreaming || streaming.content) && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-6 bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                        className="mt-8 space-y-4"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                                <CheckCircle2 className="text-emerald-600" size={24} />
+                        <div className={cn(
+                            "rounded-xl p-6 border transition-colors",
+                            streaming.isStreaming
+                                ? "bg-blue-50/50 border-blue-200"
+                                : "bg-emerald-50/50 border-emerald-200"
+                        )}>
+                            <div className="flex items-center gap-3 mb-4">
+                                {streaming.isStreaming ? (
+                                    <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 size={24} className="text-emerald-600" />
+                                )}
+                                <div>
+                                    <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                        {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                    </h3>
+                                    <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                        {streaming.isStreaming
+                                            ? "AI sedang menyusun Asesmen..."
+                                            : "Proses generate selesai. Silakan review hasil di bawah."}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-emerald-900">Dokumen Siap!</h3>
-                                <p className="text-sm text-emerald-700">
-                                    Asesmen berhasil digenerate dan siap diunduh.
-                                </p>
+
+                            {/* Markdown Preview */}
+                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <MarkdownViewer content={streaming.content} />
                             </div>
-                            <a
-                                href={result.download_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                            >
-                                <Download size={18} />
-                                Download {(result.format || 'pdf').toUpperCase()}
-                            </a>
                         </div>
                     </motion.div>
                 )}

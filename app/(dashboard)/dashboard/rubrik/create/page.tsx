@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, Star, GripVertical, AlertCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, Star, GripVertical, AlertCircle, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useRubrik } from "@/hooks/useRubrik";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -33,6 +36,7 @@ const skalaOptions = [
 
 export default function CreateRubrikPage() {
     const router = useRouter();
+    const { generateWithStreaming, streaming } = useRubrik();
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -79,29 +83,18 @@ export default function CreateRubrikPage() {
         setIsGenerating(true);
         setError(null);
         try {
-            const result = await api.post<any>('/api/v2/rubrik/generate', {
+            await generateWithStreaming({
                 mapel: formData.subject,
                 topik: formData.topik,
                 kelas: formData.kelas || "Umum",
-                jenis_penilaian: formData.jenis_penilaian,
-                skala: formData.skala,
+                jenis_penilaian: formData.jenis_penilaian as any,
+                skala: formData.skala as any,
                 model: formData.model
             });
 
-            if (result.kriteria && Array.isArray(result.kriteria)) {
-                setCriteria(result.kriteria.map((k: any, i: number) => ({
-                    id: String(i + 1),
-                    aspek: k.aspek || "",
-                    bobot: k.bobot || 25,
-                    deskriptor: k.deskriptor || { "1": "", "2": "", "3": "", "4": "" }
-                })));
-            }
-            if (result.judul) {
-                setFormData(prev => ({ ...prev, title: result.judul }));
-            }
         } catch (err: any) {
             console.error(err);
-            setError(err?.message || "Gagal generate rubrik. Silakan coba lagi.");
+            setError("Gagal generate rubrik. Silakan coba lagi.");
         } finally {
             setIsGenerating(false);
         }
@@ -286,6 +279,45 @@ export default function CreateRubrikPage() {
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary text-white rounded-xl h-14 text-lg">
                     {isGenerating ? <><Loader2 size={20} className="mr-2 animate-spin" />Generating...</> : <><Sparkles size={20} className="mr-2" />Generate Rubrik</>}
                 </Button>
+
+                {/* Streaming / Generated Content Area */}
+                {(streaming.isStreaming || streaming.content) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8 space-y-4"
+                    >
+                        <div className={cn(
+                            "rounded-xl p-6 border transition-colors",
+                            streaming.isStreaming
+                                ? "bg-blue-50/50 border-blue-200"
+                                : "bg-emerald-50/50 border-emerald-200"
+                        )}>
+                            <div className="flex items-center gap-3 mb-4">
+                                {streaming.isStreaming ? (
+                                    <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 size={24} className="text-emerald-600" />
+                                )}
+                                <div>
+                                    <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                        {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                    </h3>
+                                    <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                        {streaming.isStreaming
+                                            ? "AI sedang menyusun rubrik penilaian..."
+                                            : "Proses generate selesai. Silakan review hasil di bawah."}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Markdown Preview */}
+                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                <MarkdownViewer content={streaming.content} />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
             </motion.div>
 
             <div className="flex justify-between">

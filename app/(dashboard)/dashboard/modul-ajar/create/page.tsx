@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useModulAjar } from "@/hooks/useModulAjar";
 import { api } from "@/lib/api";
+import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { cn } from "@/lib/utils";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -119,24 +121,13 @@ export default function CreateModulAjarPage() {
                 topik: formData.title,
                 kelas: formData.grade,
                 kurikulum: "Kurikulum Merdeka",
-                alokasi_waktu: formData.duration ? parseInt(formData.duration) * 40 : 180,
-                model: formData.model,
-                format: formData.format,
-                document_type: "modul_ajar",
-                // Manual Overrides
-                capaian_pembelajaran: formData.capaianPembelajaran ? [formData.capaianPembelajaran] : [],
-                tujuan_pembelajaran: formData.tujuanPembelajaran ? [formData.tujuanPembelajaran] : [],
-                materi_pokok: formData.materi,
-                kegiatan_pembelajaran: {
-                    pendahuluan: formData.pendahuluan,
-                    inti: formData.inti,
-                    penutup: formData.penutup
-                }
+                alokasi_waktu: formData.duration ? parseInt(formData.duration) : undefined,
+                capaian_pembelajaran: formData.capaianPembelajaran,
+                tujuan_pembelajaran: formData.tujuanPembelajaran,
+                kegiatan_pembelajaran: formData.inti,
+                model: formData.model
             };
-
-            const response: any = await api.post('/api/v2/export/generate', payload);
-            setResult(response);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Generation failed:", err);
         } finally {
             setIsGenerating(false);
@@ -521,32 +512,41 @@ export default function CreateModulAjarPage() {
                             </div>
                         </div>
 
-                        {/* Result Display */}
-                        {result && (
+                        {/* Streaming / Generated Content Area */}
+                        {(streaming.isStreaming || streaming.content) && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-emerald-50 rounded-xl p-6 border border-emerald-200"
+                                className="space-y-4"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                                        <CheckCircle2 className="text-emerald-600" size={24} />
+                                <div className={cn(
+                                    "rounded-xl p-6 border transition-colors",
+                                    streaming.isStreaming
+                                        ? "bg-blue-50/50 border-blue-200"
+                                        : "bg-emerald-50/50 border-emerald-200"
+                                )}>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        {streaming.isStreaming ? (
+                                            <Loader2 size={24} className="text-blue-600 animate-spin" />
+                                        ) : (
+                                            <CheckCircle2 size={24} className="text-emerald-600" />
+                                        )}
+                                        <div>
+                                            <h3 className={cn("font-bold", streaming.isStreaming ? "text-blue-900" : "text-emerald-900")}>
+                                                {streaming.isStreaming ? "Sedang Menulis..." : "Dokumen Selesai"}
+                                            </h3>
+                                            <p className={cn("text-sm", streaming.isStreaming ? "text-blue-700" : "text-emerald-700")}>
+                                                {streaming.isStreaming
+                                                    ? "AI sedang menyusun Modul Ajar dengan format Markdown (Tabel, List, dll)"
+                                                    : "Proses generate selesai. Silakan review hasil di bawah."}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-emerald-900">Modul Siap!</h3>
-                                        <p className="text-sm text-emerald-700">
-                                            Modul Ajar telah berhasil digenerate dan siap diunduh.
-                                        </p>
+
+                                    {/* Markdown Preview */}
+                                    <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                        <MarkdownViewer content={streaming.content} />
                                     </div>
-                                    <a
-                                        href={result.download_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                                    >
-                                        <Download size={18} />
-                                        Download {(result.format || 'pdf').toUpperCase()}
-                                    </a>
                                 </div>
                             </motion.div>
                         )}
