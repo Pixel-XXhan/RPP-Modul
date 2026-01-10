@@ -18,8 +18,19 @@ import {
     BookOpen,
     Calendar,
     Download,
+    AlertCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    getFase,
+    SEMESTER_OPTIONS,
+    AI_MODEL_OPTIONS,
+    BIDANG_KEAHLIAN_SMK,
+    getProgramByBidang,
+} from "@/lib/form-constants";
 
 const steps = [
     { id: 1, title: "Informasi Dasar", icon: FileText },
@@ -31,6 +42,12 @@ const steps = [
 export default function CreateRPPPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Jenjang state for dynamic options
+    const [jenjang, setJenjang] = useState("");
+    const [bidangKeahlian, setBidangKeahlian] = useState("");
+    const [programKeahlian, setProgramKeahlian] = useState("");
+
     const [formData, setFormData] = useState({
         title: "",
         subject: "",
@@ -51,11 +68,26 @@ export default function CreateRPPPage() {
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Dynamic options based on jenjang
+    const kelasOptions = getKelasByJenjang(jenjang);
+    const mapelOptions = getMapelByJenjang(jenjang);
+    const programOptions = getProgramByBidang(bidangKeahlian);
+    const fase = jenjang && formData.grade ? getFase(jenjang, formData.grade) : '';
+
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    // Form validation - required fields
+    const isFormValid = formData.title && formData.subject && formData.grade;
+
     const handleGenerate = async () => {
+        // Validation gate
+        if (!isFormValid) {
+            setError('Mohon lengkapi Judul, Mata Pelajaran, dan Kelas terlebih dahulu');
+            return;
+        }
+
         setIsGenerating(true);
         setResult(null);
         setError(null);
@@ -152,7 +184,7 @@ export default function CreateRPPPage() {
                         <h2 className="text-xl font-bold font-serif text-foreground mb-6">Informasi Dasar</h2>
 
                         <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">Judul RPP</label>
+                            <label className="block text-sm font-medium text-foreground mb-2">Judul RPP <span className="text-red-500">*</span></label>
                             <Input
                                 value={formData.title}
                                 onChange={(e) => handleInputChange("title", e.target.value)}
@@ -161,32 +193,94 @@ export default function CreateRPPPage() {
                             />
                         </div>
 
+                        {/* Jenjang Selector - NEW */}
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">Jenjang Pendidikan <span className="text-red-500">*</span></label>
+                            <select
+                                value={jenjang}
+                                onChange={(e) => {
+                                    setJenjang(e.target.value);
+                                    handleInputChange("grade", "");
+                                    handleInputChange("subject", "");
+                                    setBidangKeahlian("");
+                                    setProgramKeahlian("");
+                                }}
+                                className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            >
+                                <option value="">Pilih Jenjang</option>
+                                {JENJANG_OPTIONS.map(j => (
+                                    <option key={j.value} value={j.value}>{j.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* SMK Only - Bidang Keahlian */}
+                        {jenjang === 'smk' && (
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-foreground mb-2">Bidang Keahlian</label>
+                                    <select
+                                        value={bidangKeahlian}
+                                        onChange={(e) => {
+                                            setBidangKeahlian(e.target.value);
+                                            setProgramKeahlian("");
+                                        }}
+                                        className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    >
+                                        <option value="">Pilih Bidang Keahlian</option>
+                                        {BIDANG_KEAHLIAN_SMK.map(b => (
+                                            <option key={b.value} value={b.value}>{b.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {bidangKeahlian && programOptions.length > 0 && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-foreground mb-2">Program Keahlian</label>
+                                        <select
+                                            value={programKeahlian}
+                                            onChange={(e) => setProgramKeahlian(e.target.value)}
+                                            className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        >
+                                            <option value="">Pilih Program</option>
+                                            {programOptions.map((p: any) => (
+                                                <option key={p.value} value={p.value}>{p.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="grid md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-foreground mb-2">Mata Pelajaran</label>
+                                <label className="block text-sm font-medium text-foreground mb-2">Mata Pelajaran <span className="text-red-500">*</span></label>
                                 <select
                                     value={formData.subject}
                                     onChange={(e) => handleInputChange("subject", e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    disabled={!jenjang}
                                 >
-                                    <option value="">Pilih mata pelajaran</option>
-                                    <option value="matematika">Matematika</option>
-                                    <option value="bahasa-indonesia">Bahasa Indonesia</option>
-                                    <option value="ipa">IPA</option>
-                                    <option value="ips">IPS</option>
+                                    <option value="">{jenjang ? 'Pilih Mata Pelajaran' : 'Pilih Jenjang dahulu'}</option>
+                                    {mapelOptions.map((m: any) => (
+                                        <option key={m.value} value={m.value}>{m.label}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-foreground mb-2">Kelas</label>
+                                <label className="block text-sm font-medium text-foreground mb-2">
+                                    Kelas <span className="text-red-500">*</span>
+                                    {fase && <span className="ml-2 text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">Fase {fase}</span>}
+                                </label>
                                 <select
                                     value={formData.grade}
                                     onChange={(e) => handleInputChange("grade", e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    disabled={!jenjang}
                                 >
-                                    <option value="">Pilih kelas</option>
-                                    <option value="7">Kelas 7</option>
-                                    <option value="8">Kelas 8</option>
-                                    <option value="9">Kelas 9</option>
+                                    <option value="">{jenjang ? 'Pilih Kelas' : 'Pilih Jenjang dahulu'}</option>
+                                    {kelasOptions.map((k: any) => (
+                                        <option key={k.value} value={k.value}>{k.label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -342,9 +436,11 @@ export default function CreateRPPPage() {
                                     onChange={(e) => handleInputChange("model", e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
-                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
-                                    <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                                    {AI_MODEL_OPTIONS.map((m: any) => (
+                                        <option key={m.value} value={m.value}>
+                                            {m.label} {m.recommended ? '⭐' : ''} {m.premium ? '💎' : ''}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div>

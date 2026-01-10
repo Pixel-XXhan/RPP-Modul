@@ -20,15 +20,14 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
-
-const faseOptions = [
-    { value: "A", label: "Fase A (Kelas 1-2 SD)" },
-    { value: "B", label: "Fase B (Kelas 3-4 SD)" },
-    { value: "C", label: "Fase C (Kelas 5-6 SD)" },
-    { value: "D", label: "Fase D (Kelas 7-9 SMP)" },
-    { value: "E", label: "Fase E (Kelas 10 SMA/SMK)" },
-    { value: "F", label: "Fase F (Kelas 11-12 SMA/SMK)" },
-];
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    FASE_OPTIONS,
+    BIDANG_KEAHLIAN_SMK,
+    AI_MODEL_OPTIONS,
+} from "@/lib/form-constants";
 
 export default function CreateATPPage() {
     const router = useRouter();
@@ -203,7 +202,7 @@ export default function CreateATPPage() {
                                 onChange={(e) => handleInputChange("phase", e.target.value)}
                                 className="w-full h-12 px-4 rounded-xl border border-border bg-card text-foreground"
                             >
-                                {faseOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                {FASE_OPTIONS.map((f: any) => <option key={f.value} value={f.value}>{f.label}</option>)}
                             </select>
                         </div>
                         <div>
@@ -323,9 +322,9 @@ export default function CreateATPPage() {
                         onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                         className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-foreground"
                     >
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail)</option>
-                        <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                        {AI_MODEL_OPTIONS.map((m: any) => (
+                            <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                        ))}
                     </select>
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl h-14 text-lg shadow-lg shadow-primary/20">

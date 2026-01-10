@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Save, Loader2, FileText, Video, Image as ImageIcon, Upload, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    AI_MODEL_OPTIONS,
+} from "@/lib/form-constants";
 
 const typeOptions = [
     { value: "text", label: "Teks", icon: FileText, color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30", desc: "Artikel, penjelasan, panduan" },
@@ -178,9 +184,9 @@ export default function CreateMateriPage() {
                         onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                         className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-foreground"
                     >
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail)</option>
-                        <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                        {AI_MODEL_OPTIONS.map((m: any) => (
+                            <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                        ))}
                     </select>
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating || materiType !== "text"} className="w-full bg-primary text-white rounded-xl h-14 text-lg">

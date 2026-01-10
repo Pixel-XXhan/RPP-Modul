@@ -5,11 +5,24 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, FileText, Download } from "lucide-react";
+import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, FileText, Download, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    getFase,
+    BIDANG_KEAHLIAN_SMK,
+    AI_MODEL_OPTIONS,
+} from "@/lib/form-constants";
 
 export default function CreateLKPDPage() {
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Jenjang state for dynamic options
+    const [jenjang, setJenjang] = useState("");
+    const [bidangKeahlian, setBidangKeahlian] = useState("");
+
     const [formData, setFormData] = useState({
         title: "",
         subject: "",
@@ -19,6 +32,14 @@ export default function CreateLKPDPage() {
         format: "pdf"
     });
     const [result, setResult] = useState<any>(null);
+
+    // Dynamic options based on jenjang
+    const kelasOptions = getKelasByJenjang(jenjang);
+    const mapelOptions = getMapelByJenjang(jenjang);
+    const fase = jenjang && formData.grade ? getFase(jenjang, formData.grade) : '';
+
+    // Form validation
+    const isFormValid = formData.title && formData.subject && formData.grade && jenjang;
 
     const [questions, setQuestions] = useState([
         { id: "1", question: "" }
@@ -132,9 +153,9 @@ export default function CreateLKPDPage() {
                             onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                             className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
                         >
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
-                            <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                            {AI_MODEL_OPTIONS.map((m: any) => (
+                                <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                            ))}
                         </select>
                     </div>
                     <div>

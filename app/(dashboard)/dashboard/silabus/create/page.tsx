@@ -17,8 +17,19 @@ import {
     ChevronDown,
     ChevronUp,
     Download,
+    AlertCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    getFase,
+    SEMESTER_OPTIONS,
+    AI_MODEL_OPTIONS,
+    BIDANG_KEAHLIAN_SMK,
+    getProgramByBidang,
+} from "@/lib/form-constants";
 
 interface WeekData {
     id: string;
@@ -29,6 +40,11 @@ interface WeekData {
 
 export default function CreateSilabusPage() {
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Jenjang state for dynamic options
+    const [jenjang, setJenjang] = useState("");
+    const [bidangKeahlian, setBidangKeahlian] = useState("");
+
     const [formData, setFormData] = useState({
         title: "",
         subject: "",
@@ -39,6 +55,11 @@ export default function CreateSilabusPage() {
         format: "pdf",
     });
     const [result, setResult] = useState<any>(null);
+
+    // Dynamic options based on jenjang
+    const kelasOptions = getKelasByJenjang(jenjang);
+    const mapelOptions = getMapelByJenjang(jenjang);
+    const fase = jenjang && formData.grade ? getFase(jenjang, formData.grade) : '';
 
     const [weeks, setWeeks] = useState<WeekData[]>([
         { id: "1", week: "1-2", topic: "Pengenalan Bilangan Bulat", cp: "MAT-D-01" },
@@ -113,39 +134,68 @@ export default function CreateSilabusPage() {
                     <Input
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="Judul Silabus"
+                        placeholder="Judul Silabus *"
                         className="h-12 rounded-xl bg-background border-border"
                     />
+
+                    {/* Jenjang Selector */}
+                    <select
+                        value={jenjang}
+                        onChange={(e) => {
+                            setJenjang(e.target.value);
+                            setFormData({ ...formData, subject: "", grade: "" });
+                            setBidangKeahlian("");
+                        }}
+                        className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground"
+                    >
+                        <option value="">Pilih Jenjang Pendidikan *</option>
+                        {JENJANG_OPTIONS.map(j => (
+                            <option key={j.value} value={j.value}>{j.label}</option>
+                        ))}
+                    </select>
+
+                    {/* SMK Bidang Keahlian */}
+                    {jenjang === 'smk' && (
+                        <select value={bidangKeahlian} onChange={(e) => setBidangKeahlian(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground">
+                            <option value="">Pilih Bidang Keahlian</option>
+                            {BIDANG_KEAHLIAN_SMK.map(b => (
+                                <option key={b.value} value={b.value}>{b.label}</option>
+                            ))}
+                        </select>
+                    )}
+
                     <div className="grid md:grid-cols-4 gap-4">
                         <select
                             value={formData.subject}
                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                             className="h-12 px-4 rounded-xl border border-border bg-background text-foreground"
+                            disabled={!jenjang}
                         >
-                            <option value="">Mata Pelajaran</option>
-                            <option value="matematika">Matematika</option>
-                            <option value="bahasa-indonesia">Bahasa Indonesia</option>
-                            <option value="ipa">IPA</option>
-                            <option value="ips">IPS</option>
+                            <option value="">{jenjang ? 'Mata Pelajaran *' : 'Pilih Jenjang'}</option>
+                            {mapelOptions.map((m: any) => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
                         </select>
                         <select
                             value={formData.grade}
                             onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                             className="h-12 px-4 rounded-xl border border-border bg-background text-foreground"
+                            disabled={!jenjang}
                         >
-                            <option value="">Kelas</option>
-                            <option value="7">Kelas 7</option>
-                            <option value="8">Kelas 8</option>
-                            <option value="9">Kelas 9</option>
+                            <option value="">{jenjang ? `Kelas * ${fase ? `(Fase ${fase})` : ''}` : 'Pilih Jenjang'}</option>
+                            {kelasOptions.map((k: any) => (
+                                <option key={k.value} value={k.value}>{k.label}</option>
+                            ))}
                         </select>
                         <select
                             value={formData.semester}
                             onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                             className="h-12 px-4 rounded-xl border border-border bg-background text-foreground"
                         >
-                            <option value="">Semester</option>
-                            <option value="1">Ganjil</option>
-                            <option value="2">Genap</option>
+                            <option value="">Semester *</option>
+                            {SEMESTER_OPTIONS.map(s => (
+                                <option key={s.value} value={s.value}>{s.label}</option>
+                            ))}
                         </select>
                         <Input
                             value={formData.year}
@@ -231,9 +281,9 @@ export default function CreateSilabusPage() {
                             onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                             className="w-full h-12 px-4 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
                         >
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
-                            <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                            {AI_MODEL_OPTIONS.map((m: any) => (
+                                <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                            ))}
                         </select>
                     </div>
                     <div>

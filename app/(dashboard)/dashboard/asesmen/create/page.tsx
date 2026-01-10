@@ -5,12 +5,26 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, ListChecks, PenLine, Download } from "lucide-react";
+import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, ListChecks, PenLine, Download, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    getFase,
+    BIDANG_KEAHLIAN_SMK,
+    getProgramByBidang,
+    AI_MODEL_OPTIONS,
+} from "@/lib/form-constants";
 
 export default function CreateAsesmenPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [asesmenType, setAsesmenType] = useState<"formatif" | "sumatif">("formatif");
+
+    // Jenjang state for dynamic options
+    const [jenjang, setJenjang] = useState("");
+    const [bidangKeahlian, setBidangKeahlian] = useState("");
+
     const [formData, setFormData] = useState({
         title: "",
         subject: "",
@@ -20,6 +34,15 @@ export default function CreateAsesmenPage() {
         format: "pdf"
     });
     const [result, setResult] = useState<any>(null);
+
+    // Dynamic options based on jenjang
+    const kelasOptions = getKelasByJenjang(jenjang);
+    const mapelOptions = getMapelByJenjang(jenjang);
+    const programOptions = getProgramByBidang(bidangKeahlian);
+    const fase = jenjang && formData.grade ? getFase(jenjang, formData.grade) : '';
+
+    // Form validation
+    const isFormValid = formData.title && formData.subject && formData.grade && jenjang;
 
     const [criteria, setCriteria] = useState([
         { id: "1", name: "Pemahaman Konsep", weight: 30 },
@@ -36,6 +59,12 @@ export default function CreateAsesmenPage() {
     };
 
     const handleGenerate = async () => {
+        // Validation gate
+        if (!isFormValid) {
+            alert('Mohon lengkapi Judul, Mata Pelajaran, dan Kelas terlebih dahulu');
+            return;
+        }
+
         setIsGenerating(true);
         setResult(null);
         try {
@@ -97,20 +126,56 @@ export default function CreateAsesmenPage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-neutral-200 p-6">
                 <h2 className="text-lg font-bold mb-6">Informasi Dasar</h2>
                 <div className="space-y-4">
-                    <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Judul Asesmen" className="h-12 rounded-xl" />
-                    <div className="grid md:grid-cols-3 gap-4">
-                        <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                            <option value="">Mata Pelajaran</option>
-                            <option value="matematika">Matematika</option>
-                            <option value="bahasa-indonesia">Bahasa Indonesia</option>
+                    <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Judul Asesmen *" className="h-12 rounded-xl" />
+
+                    {/* Jenjang Selector - NEW */}
+                    <select
+                        value={jenjang}
+                        onChange={(e) => {
+                            setJenjang(e.target.value);
+                            setFormData({ ...formData, subject: "", grade: "" });
+                            setBidangKeahlian("");
+                        }}
+                        className="w-full h-12 px-4 rounded-xl border border-neutral-200"
+                    >
+                        <option value="">Pilih Jenjang Pendidikan *</option>
+                        {JENJANG_OPTIONS.map(j => (
+                            <option key={j.value} value={j.value}>{j.label}</option>
+                        ))}
+                    </select>
+
+                    {/* SMK Bidang Keahlian */}
+                    {jenjang === 'smk' && (
+                        <select value={bidangKeahlian} onChange={(e) => setBidangKeahlian(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-neutral-200">
+                            <option value="">Pilih Bidang Keahlian</option>
+                            {BIDANG_KEAHLIAN_SMK.map(b => (
+                                <option key={b.value} value={b.value}>{b.label}</option>
+                            ))}
                         </select>
-                        <select value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200">
-                            <option value="">Kelas</option>
-                            <option value="7">Kelas 7</option>
-                            <option value="8">Kelas 8</option>
+                    )}
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                        <select value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200" disabled={!jenjang}>
+                            <option value="">{jenjang ? 'Mata Pelajaran *' : 'Pilih Jenjang dahulu'}</option>
+                            {mapelOptions.map((m: any) => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                        </select>
+                        <select value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} className="h-12 px-4 rounded-xl border border-neutral-200" disabled={!jenjang}>
+                            <option value="">{jenjang ? `Kelas * ${fase ? `(Fase ${fase})` : ''}` : 'Pilih Jenjang dahulu'}</option>
+                            {kelasOptions.map((k: any) => (
+                                <option key={k.value} value={k.value}>{k.label}</option>
+                            ))}
                         </select>
                         <Input value={formData.cp} onChange={(e) => setFormData({ ...formData, cp: e.target.value })} placeholder="Kode CP/TP" className="h-12 rounded-xl" />
                     </div>
+
+                    {!isFormValid && (
+                        <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl text-amber-800">
+                            <AlertCircle size={18} />
+                            <span className="text-sm">Lengkapi Judul, Jenjang, Mata Pelajaran, dan Kelas</span>
+                        </div>
+                    )}
                 </div>
             </motion.div>
 
@@ -160,9 +225,11 @@ export default function CreateAsesmenPage() {
                             onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                             className="w-full h-12 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
                         >
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail Tinggi)</option>
-                            <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                            {AI_MODEL_OPTIONS.map((m: any) => (
+                                <option key={m.value} value={m.value}>
+                                    {m.label} {m.recommended ? '⭐' : ''} {m.premium ? '💎' : ''}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>

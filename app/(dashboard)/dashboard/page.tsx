@@ -146,29 +146,34 @@ export default function DashboardPage() {
                     api.get<{ id: string }[]>('/api/v2/asesmen', { limit: 100 }).catch(() => []),
                 ]);
 
+                // CRITICAL: Ensure arrays - API might return {} or undefined
+                const modulAjar = Array.isArray(modulAjarRes) ? modulAjarRes : [];
+                const rpp = Array.isArray(rppRes) ? rppRes : [];
+                const asesmen = Array.isArray(asesmenRes) ? asesmenRes : [];
+
                 setStats({
-                    totalDocuments: (modulAjarRes?.length || 0) + (rppRes?.length || 0) + (asesmenRes?.length || 0),
-                    modulAjar: modulAjarRes?.length || 0,
-                    rpp: rppRes?.length || 0,
-                    asesmen: asesmenRes?.length || 0,
+                    totalDocuments: modulAjar.length + rpp.length + asesmen.length,
+                    modulAjar: modulAjar.length,
+                    rpp: rpp.length,
+                    asesmen: asesmen.length,
                 });
 
                 // Build recent documents from combined data
                 const allDocs: RecentDocument[] = [
-                    ...(modulAjarRes?.slice(0, 2).map((d: any) => ({
+                    ...modulAjar.slice(0, 2).map((d: any) => ({
                         id: d.id,
                         title: d.judul || 'Modul Ajar',
                         type: 'Modul Ajar',
                         updatedAt: d.updated_at,
                         status: 'created' as const,
-                    })) || []),
-                    ...(rppRes?.slice(0, 2).map((d: any) => ({
+                    })),
+                    ...rpp.slice(0, 2).map((d: any) => ({
                         id: d.id,
                         title: d.judul || 'RPP',
                         type: 'RPP',
                         updatedAt: d.updated_at,
                         status: 'updated' as const,
-                    })) || []),
+                    })),
                 ];
                 setRecentDocs(allDocs.slice(0, 4));
             } catch (error) {

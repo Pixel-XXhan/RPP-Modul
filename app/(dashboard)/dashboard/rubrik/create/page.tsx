@@ -8,6 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, Star, GripVertical, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+    JENJANG_OPTIONS,
+    getKelasByJenjang,
+    getMapelByJenjang,
+    getFase,
+    BIDANG_KEAHLIAN_SMK,
+    AI_MODEL_OPTIONS,
+} from "@/lib/form-constants";
 
 const penilaianTypes = [
     { value: "sikap", label: "Sikap" },
@@ -270,9 +278,9 @@ export default function CreateRubrikPage() {
                         onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                         className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-foreground"
                     >
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Cepat)</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detail)</option>
-                        <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Terbaru)</option>
+                        {AI_MODEL_OPTIONS.map((m: any) => (
+                            <option key={m.value} value={m.value}>{m.label} {m.recommended ? '⭐' : ''}</option>
+                        ))}
                     </select>
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-primary text-white rounded-xl h-14 text-lg">

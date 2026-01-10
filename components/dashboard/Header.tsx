@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import {
     Search,
@@ -29,10 +31,13 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
     const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const { theme, setTheme } = useTheme();
+    const { user } = useAuth();
+    const { profile, fetchProfile } = useProfile();
 
     useEffect(() => {
         setMounted(true);
-    }, []);
+        fetchProfile();
+    }, [fetchProfile]);
 
     // Generate breadcrumb from pathname
     const pathSegments = pathname.split("/").filter(Boolean);
@@ -170,7 +175,7 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
                         className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-muted transition-colors"
                     >
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                            A
+                            {(profile?.nama || user?.email || 'P').charAt(0).toUpperCase()}
                         </div>
                         <ChevronDown size={14} className="text-muted-foreground hidden md:block" />
                     </button>
@@ -178,8 +183,8 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
                     {showUserMenu && (
                         <div className="absolute right-0 top-12 w-56 bg-card rounded-2xl shadow-2xl border border-border overflow-hidden z-50">
                             <div className="p-4 border-b border-border">
-                                <p className="font-bold text-foreground">Arief Fajar</p>
-                                <p className="text-xs text-muted-foreground">arief@sekolah.id</p>
+                                <p className="font-bold text-foreground">{profile?.nama || user?.email?.split('@')[0] || 'Pengguna'}</p>
+                                <p className="text-xs text-muted-foreground">{user?.email || 'user@sekolah.id'}</p>
                             </div>
                             <div className="p-2">
                                 <Link

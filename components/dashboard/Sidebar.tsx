@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -300,39 +302,57 @@ export function DashboardSidebar() {
                 })}
             </div>
 
-            {/* User Profile / Logout */}
-            <div className="border-t border-neutral-100 dark:border-neutral-800 p-4 shrink-0">
-                <div className={cn(
-                    "flex items-center gap-3",
-                    isCollapsed && "justify-center"
-                )}>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shadow-md">
-                        A
-                    </div>
-                    {!isCollapsed && (
-                        <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex-1 min-w-0"
-                        >
-                            <p className="text-sm font-semibold text-foreground truncate">Arief Fajar</p>
-                            <p className="text-xs text-muted-foreground truncate">arief@sekolah.id</p>
-                        </motion.div>
-                    )}
-                    {!isCollapsed && (
-                        <Link href="/login">
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"
-                                title="Keluar"
-                            >
-                                <LogOut size={16} />
-                            </motion.button>
-                        </Link>
-                    )}
-                </div>
-            </div>
+            {/* User Profile / Logout - Dynamic from hooks */}
+            <UserProfileSection isCollapsed={isCollapsed} />
         </motion.aside>
+    );
+}
+
+// Separate component to use hooks
+function UserProfileSection({ isCollapsed }: { isCollapsed: boolean }) {
+    const { user } = useAuth();
+    const { profile, fetchProfile } = useProfile();
+
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
+
+    const userName = profile?.nama || user?.email?.split('@')[0] || 'Pengguna';
+    const userEmail = user?.email || 'user@sekolah.id';
+    const userInitial = userName.charAt(0).toUpperCase();
+
+    return (
+        <div className="border-t border-neutral-100 dark:border-neutral-800 p-4 shrink-0">
+            <div className={cn(
+                "flex items-center gap-3",
+                isCollapsed && "justify-center"
+            )}>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shadow-md">
+                    {userInitial}
+                </div>
+                {!isCollapsed && (
+                    <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex-1 min-w-0"
+                    >
+                        <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                    </motion.div>
+                )}
+                {!isCollapsed && (
+                    <Link href="/login">
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors"
+                            title="Keluar"
+                        >
+                            <LogOut size={16} />
+                        </motion.button>
+                    </Link>
+                )}
+            </div>
+        </div>
     );
 }
