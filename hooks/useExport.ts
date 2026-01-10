@@ -32,6 +32,7 @@ export function useExport() {
         format: ExportRequest['format']
         kurikulum?: string
         alokasi_waktu?: number
+        content?: any
     }) => {
         setLoading(true)
         setError(null)

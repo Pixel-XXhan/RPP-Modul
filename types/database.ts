@@ -330,6 +330,7 @@ export interface ExportRequest {
     document_id?: string
     document_type: 'rpp' | 'silabus' | 'modul_ajar' | 'lkpd' | 'kisi_kisi' | 'bank_soal' | 'rubrik' | 'tujuan_pembelajaran' | 'atp' | 'materi' | 'asesmen' | 'bank-soal'
     format: 'pdf' | 'docx'
+    content?: any
 }
 
 export interface ExportResponse {

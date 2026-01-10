@@ -556,7 +556,8 @@ export default function CreateRPPPage() {
                                                     document_type: 'rpp',
                                                     format: 'docx',
                                                     kurikulum: 'merdeka',
-                                                    alokasi_waktu: parseInt(formData.duration) || 2
+                                                    alokasi_waktu: parseInt(formData.duration) || 2,
+                                                    content: streaming.content
                                                 })}
                                                 disabled={exportLoading}
                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
