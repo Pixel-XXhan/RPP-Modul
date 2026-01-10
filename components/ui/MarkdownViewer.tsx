@@ -3,6 +3,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
 
 interface MarkdownViewerProps {
@@ -18,6 +19,7 @@ export function MarkdownViewer({ content, className }: MarkdownViewerProps) {
         <div className={cn("prose prose-emerald dark:prose-invert max-w-none w-full", className)}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                     // Override table styles to ensure they look good
                     table: ({ node, ...props }) => (

@@ -447,10 +447,9 @@ export const OPENROUTER_MODELS = [
 // Combined for dropdown (Gemini first as default provider)
 export const AI_MODEL_OPTIONS = [
     // Gemini - Fast options first
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Cepat & Murah)', provider: 'gemini', recommended: true },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Context 1M Token)', provider: 'gemini' },
-    { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Thinking Mode)', provider: 'gemini' },
-    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Flagship Reasoning)', provider: 'gemini' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Cepat & Murah)', provider: 'gemini', recommended: true },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Context 1M Token)', provider: 'gemini' },
+    { value: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash (Preview)', provider: 'gemini' },
     // OpenRouter - Premium options
     { value: 'anthropic/claude-opus-4.5', label: 'Claude Opus 4.5 (Terpintar)', provider: 'openrouter', premium: true },
     { value: 'anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5 (Agentic)', provider: 'openrouter', premium: true },

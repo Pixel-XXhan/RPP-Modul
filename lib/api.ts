@@ -135,6 +135,9 @@ export async function streamingRequest(
         })
 
         if (!response.ok) {
+            if (response.status === 429) {
+                throw new ApiError('Batas request tercapai. Mohon tunggu beberapa saat sebelum mencoba lagi.', 429)
+            }
             const errorData = await response.json().catch(() => ({}))
             throw new ApiError(errorData.message || 'Streaming Error', response.status)
         }
