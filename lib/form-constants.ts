@@ -363,17 +363,6 @@ export const MAPEL_SMK_UMUM = [
 // ========================================
 // MATA PELAJARAN KEJURUAN SMK (Fase E & F)
 // ========================================
-export const MAPEL_SMK_KEJURUAN = [
-    { value: 'matematika', label: 'Matematika' },
-    { value: 'bahasa-inggris', label: 'Bahasa Inggris' },
-    { value: 'informatika', label: 'Informatika' },
-    { value: 'projek-ipas', label: 'Projek Ilmu Pengetahuan Alam dan Sosial' },
-    { value: 'dasar-program', label: 'Dasar-Dasar Program Keahlian' },
-    { value: 'konsentrasi', label: 'Konsentrasi Keahlian' },
-    { value: 'pkk', label: 'Projek Kreatif dan Kewirausahaan' },
-    { value: 'pkl', label: 'Praktik Kerja Lapangan' },
-] as const
-
 // ========================================
 // MATA PELAJARAN PRODUKTIF PPLG
 // ========================================
@@ -404,6 +393,24 @@ export const MAPEL_TKJ = [
     { value: 'wan', label: 'Teknologi Wide Area Network', fase: 'F' },
     { value: 'keamanan-jaringan', label: 'Keamanan Jaringan', fase: 'F' },
     { value: 'administrasi-sistem', label: 'Administrasi Sistem Jaringan', fase: 'F' },
+] as const
+
+// ========================================
+// MATA PELAJARAN KEJURUAN SMK (Fase E & F)
+// ========================================
+export const MAPEL_SMK_KEJURUAN = [
+    { value: 'matematika', label: 'Matematika' },
+    { value: 'bahasa-inggris', label: 'Bahasa Inggris' },
+    { value: 'informatika', label: 'Informatika' },
+    { value: 'projek-ipas', label: 'Projek Ilmu Pengetahuan Alam dan Sosial' },
+    { value: 'dasar-program', label: 'Dasar-Dasar Program Keahlian' },
+    { value: 'konsentrasi', label: 'Konsentrasi Keahlian' },
+    { value: 'pkk', label: 'Projek Kreatif dan Kewirausahaan' },
+    { value: 'pkl', label: 'Praktik Kerja Lapangan' },
+    // PPLG
+    ...MAPEL_PPLG,
+    // TJKT
+    ...MAPEL_TKJ,
 ] as const
 
 // ========================================

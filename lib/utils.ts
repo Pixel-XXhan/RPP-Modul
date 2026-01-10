@@ -17,12 +17,12 @@ export function constructPrompt(type: string, input: AIGenerateRequest & Record<
       2. Komponen Inti (Tujuan, Pemahaman Bermakna, Pertanyaan Pemantik)
       3. Kegiatan Pembelajaran (Pendahuluan, Inti, Penutup)
       4. Asesmen dan Lampiran.
-      Format output dalam Markdown.`
+      Format output dalam Markdown. JANGAN ada teks pengantar seperti "Tentu", "Berikut", dsb. LANGSUNG ke konten.`,
 
     case 'rpp':
       return `Buatkan Rencana Pelaksanaan Pembelajaran (RPP) untuk ${baseInfo}.
       Fokus pada tujuan pembelajaran, langkah-langkah kegiatan (pendahuluan, inti, penutup), dan penilaian.
-      Format output dalam Markdown.`
+      Format output dalam Markdown. JANGAN ada teks pengantar. LANGSUNG ke konten.`,
 
     case 'silabus':
       return `Buatkan Silabus Pembelajaran untuk ${baseInfo}, Semester ${input.semester || 'Ganjil'}.

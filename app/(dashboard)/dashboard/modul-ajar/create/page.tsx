@@ -22,6 +22,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { useModulAjar } from "@/hooks/useModulAjar";
+import { useExport } from "@/hooks/useExport";
 import { api } from "@/lib/api";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const steps = [
 export default function CreateModulAjarPage() {
     const router = useRouter();
     const { create, streaming, generateWithStreaming, loading, error } = useModulAjar();
+    const { generateAndExport, loading: exportLoading } = useExport();
     const [currentStep, setCurrentStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedContent, setGeneratedContent] = useState("");
@@ -541,6 +543,35 @@ export default function CreateModulAjarPage() {
                                                     : "Proses generate selesai. Silakan review hasil di bawah."}
                                             </p>
                                         </div>
+                                        {streaming.isStreaming && (
+                                            <Button
+                                                onClick={streaming.stop}
+                                                variant="destructive"
+                                                size="sm"
+                                                className="h-8 rounded-lg"
+                                            >
+                                                Stop Generation
+                                            </Button>
+                                        )}
+                                        {!streaming.isStreaming && streaming.content && (
+                                            <Button
+                                                onClick={() => generateAndExport({
+                                                    mapel: formData.subject,
+                                                    topik: formData.title,
+                                                    kelas: formData.grade,
+                                                    document_type: 'modul_ajar',
+                                                    format: 'docx',
+                                                    kurikulum: 'merdeka',
+                                                    alokasi_waktu: parseInt(formData.duration) || 2,
+                                                    content: streaming.content
+                                                })}
+                                                disabled={exportLoading}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
+                                            >
+                                                {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
+                                                Download Docx
+                                            </Button>
+                                        )}
                                     </div>
 
                                     {/* Markdown Preview */}

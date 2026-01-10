@@ -11,6 +11,9 @@ interface MarkdownViewerProps {
 }
 
 export function MarkdownViewer({ content, className }: MarkdownViewerProps) {
+    // Fix: Replace HTML <br> tags with Markdown newlines to prevent raw tag display
+    const processedContent = content.replace(/<br\s*\/?>/gi, '\n');
+
     return (
         <div className={cn("prose prose-emerald dark:prose-invert max-w-none w-full", className)}>
             <ReactMarkdown
@@ -44,7 +47,7 @@ export function MarkdownViewer({ content, className }: MarkdownViewerProps) {
                     )
                 }}
             >
-                {content}
+                {processedContent}
             </ReactMarkdown>
         </div>
     );
