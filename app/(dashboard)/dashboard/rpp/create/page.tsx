@@ -1,14 +1,14 @@
 "use client";
 
-
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
+import { DocumentExportPanel } from "@/components/ui/DocumentExportPanel";
 import {
     ArrowLeft,
     ArrowRight,
@@ -23,10 +23,12 @@ import {
     Calendar,
     Download,
     AlertCircle,
+    Wand2,
+    RefreshCw,
 } from "lucide-react";
 import { useRPP } from "@/hooks/useRPP";
-import { useExport } from "@/hooks/useExport";
 import { api } from "@/lib/api";
+import { incrementLocalGenerationCount } from "@/hooks/useLocalSettings";
 import {
     JENJANG_OPTIONS,
     getKelasByJenjang,
@@ -47,10 +49,11 @@ const steps = [
 
 export default function CreateRPPPage() {
     const { generateWithStreaming, streaming, create } = useRPP();
-    const { generateAndExport, loading: exportLoading } = useExport();
     const router = useRouter();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [currentStep, setCurrentStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isAutoGenerating, setIsAutoGenerating] = useState<'tujuan' | 'kegiatan' | null>(null);
 
     // Jenjang state for dynamic options
     const [jenjang, setJenjang] = useState("");
@@ -141,7 +144,7 @@ export default function CreateRPPPage() {
             </div>
 
             {/* Progress Steps */}
-            <div className="bg-white rounded-2xl border border-neutral-200 p-4 overflow-x-auto">
+            <div className="bg-card rounded-2xl border border-border p-4 overflow-x-auto">
                 <div className="flex items-center justify-between min-w-[500px]">
                     {steps.map((step, index) => {
                         const Icon = step.icon;
@@ -153,17 +156,17 @@ export default function CreateRPPPage() {
                                 <button
                                     onClick={() => setCurrentStep(step.id)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isActive
-                                        ? "bg-primary text-white"
+                                        ? "bg-primary text-primary-foreground"
                                         : isCompleted
-                                            ? "bg-emerald-100 text-emerald-700"
-                                            : "bg-neutral-100 text-muted-foreground hover:bg-neutral-200"
+                                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
                                         }`}
                                 >
                                     {isCompleted ? <CheckCircle2 size={18} /> : <Icon size={18} />}
                                     <span className="font-medium text-sm hidden md:inline">{step.title}</span>
                                 </button>
                                 {index < steps.length - 1 && (
-                                    <div className={`w-8 h-0.5 mx-2 ${isCompleted ? "bg-emerald-300" : "bg-neutral-200"}`} />
+                                    <div className={`w-8 h-0.5 mx-2 ${isCompleted ? "bg-emerald-300 dark:bg-emerald-700" : "bg-border"}`} />
                                 )}
                             </div>
                         );
@@ -176,7 +179,7 @@ export default function CreateRPPPage() {
                 key={currentStep}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-white rounded-2xl border border-neutral-200 p-6 md:p-8"
+                className="bg-card rounded-2xl border border-border p-6 md:p-8"
             >
                 {currentStep === 1 && (
                     <div className="space-y-6">
@@ -326,7 +329,44 @@ export default function CreateRPPPage() {
 
                 {currentStep === 2 && (
                     <div className="space-y-6">
-                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Tujuan & Materi</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold font-serif text-foreground">Tujuan & Materi</h2>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                    if (!formData.title || !formData.subject || !formData.grade) {
+                                        setError('Lengkapi Informasi Dasar terlebih dahulu');
+                                        return;
+                                    }
+                                    setIsAutoGenerating('tujuan');
+                                    try {
+                                        const response = await api.post<{ data?: { suggestions?: string[] } }>('/api/v2/suggestions/tujuan-pembelajaran', {
+                                            mapel: formData.subject,
+                                            topik: formData.title,
+                                            kelas: formData.grade,
+                                            kurikulum: 'merdeka'
+                                        });
+                                        const data = response as { data?: { suggestions?: string[] } };
+                                        if (data.data?.suggestions) {
+                                            handleInputChange('tujuanPembelajaran', data.data.suggestions.join('\n'));
+                                        }
+                                    } catch (err) {
+                                        console.error('Auto-generate failed:', err);
+                                    } finally {
+                                        setIsAutoGenerating(null);
+                                    }
+                                }}
+                                disabled={isAutoGenerating !== null}
+                                className="gap-2"
+                            >
+                                {isAutoGenerating === 'tujuan' ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
+                                ) : (
+                                    <><Wand2 size={16} /> Generate dengan AI</>
+                                )}
+                            </Button>
+                        </div>
 
                         <div>
                             <label className="block text-sm font-medium text-foreground mb-2">
@@ -337,7 +377,7 @@ export default function CreateRPPPage() {
                                 onChange={(e) => handleInputChange("tujuanPembelajaran", e.target.value)}
                                 placeholder="Masukkan tujuan pembelajaran yang ingin dicapai..."
                                 rows={4}
-                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                             />
                         </div>
 
@@ -350,7 +390,7 @@ export default function CreateRPPPage() {
                                 onChange={(e) => handleInputChange("materi", e.target.value)}
                                 placeholder="Masukkan poin-poin materi yang akan diajarkan..."
                                 rows={4}
-                                className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                             />
                         </div>
 
@@ -370,47 +410,88 @@ export default function CreateRPPPage() {
 
                 {currentStep === 3 && (
                     <div className="space-y-6">
-                        <h2 className="text-xl font-bold font-serif text-foreground mb-6">Kegiatan Pembelajaran</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold font-serif text-foreground">Kegiatan Pembelajaran</h2>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                    if (!formData.title || !formData.subject || !formData.grade) {
+                                        setError('Lengkapi Informasi Dasar terlebih dahulu');
+                                        return;
+                                    }
+                                    setIsAutoGenerating('kegiatan');
+                                    try {
+                                        const response = await api.post<{ data?: { suggestions?: { pendahuluan?: string | string[]; inti?: string | string[]; penutup?: string | string[] } } }>('/api/v2/suggestions/kegiatan-pembelajaran', {
+                                            mapel: formData.subject,
+                                            topik: formData.title,
+                                            kelas: formData.grade,
+                                            kurikulum: 'merdeka',
+                                            tujuan: formData.tujuanPembelajaran
+                                        });
+                                        const data = response as { data?: { suggestions?: { pendahuluan?: string | string[]; inti?: string | string[]; penutup?: string | string[] } } };
+                                        if (data.data?.suggestions) {
+                                            const s = data.data.suggestions;
+                                            if (s.pendahuluan) handleInputChange('pendahuluan', Array.isArray(s.pendahuluan) ? s.pendahuluan.join('\n') : s.pendahuluan);
+                                            if (s.inti) handleInputChange('inti', Array.isArray(s.inti) ? s.inti.join('\n') : s.inti);
+                                            if (s.penutup) handleInputChange('penutup', Array.isArray(s.penutup) ? s.penutup.join('\n') : s.penutup);
+                                        }
+                                    } catch (err) {
+                                        console.error('Auto-generate failed:', err);
+                                    } finally {
+                                        setIsAutoGenerating(null);
+                                    }
+                                }}
+                                disabled={isAutoGenerating !== null}
+                                className="gap-2"
+                            >
+                                {isAutoGenerating === 'kegiatan' ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
+                                ) : (
+                                    <><Wand2 size={16} /> Generate dengan AI</>
+                                )}
+                            </Button>
+                        </div>
 
-                        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100 mb-4">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-800 mb-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-bold text-emerald-700">Pendahuluan</span>
-                                <span className="text-xs text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">~10 menit</span>
+                                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Pendahuluan</span>
+                                <span className="text-xs text-emerald-600 dark:text-emerald-500 bg-emerald-100 dark:bg-emerald-800 px-2 py-0.5 rounded">~10 menit</span>
                             </div>
                             <textarea
                                 value={formData.pendahuluan}
                                 onChange={(e) => handleInputChange("pendahuluan", e.target.value)}
                                 placeholder="Contoh: Salam, doa, apersepsi, menyampaikan tujuan..."
                                 rows={3}
-                                className="w-full px-4 py-3 rounded-xl border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 resize-none"
+                                className="w-full px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-700 bg-background focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-700 resize-none"
                             />
                         </div>
 
-                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800 mb-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-bold text-blue-700">Kegiatan Inti</span>
-                                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">~60 menit</span>
+                                <span className="text-sm font-bold text-blue-700 dark:text-blue-400">Kegiatan Inti</span>
+                                <span className="text-xs text-blue-600 dark:text-blue-500 bg-blue-100 dark:bg-blue-800 px-2 py-0.5 rounded">~60 menit</span>
                             </div>
                             <textarea
                                 value={formData.inti}
                                 onChange={(e) => handleInputChange("inti", e.target.value)}
                                 placeholder="Contoh: Mengamati, menanya, mengumpulkan informasi..."
                                 rows={5}
-                                className="w-full px-4 py-3 rounded-xl border border-blue-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                                className="w-full px-4 py-3 rounded-xl border border-blue-200 dark:border-blue-700 bg-background focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-700 resize-none"
                             />
                         </div>
 
-                        <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-100 dark:border-amber-800">
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-bold text-amber-700">Penutup</span>
-                                <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded">~10 menit</span>
+                                <span className="text-sm font-bold text-amber-700 dark:text-amber-400">Penutup</span>
+                                <span className="text-xs text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-800 px-2 py-0.5 rounded">~10 menit</span>
                             </div>
                             <textarea
                                 value={formData.penutup}
                                 onChange={(e) => handleInputChange("penutup", e.target.value)}
                                 placeholder="Contoh: Refleksi, kesimpulan, tugas, doa penutup..."
                                 rows={3}
-                                className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+                                className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-background focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-700 resize-none"
                             />
                         </div>
                     </div>
@@ -455,7 +536,7 @@ export default function CreateRPPPage() {
                             </div>
                         </div>
 
-                        <div className="bg-neutral-50 rounded-xl p-6 space-y-4">
+                        <div className="bg-muted/50 rounded-xl p-6 space-y-4">
                             <h3 className="font-semibold text-foreground">Ringkasan RPP</h3>
                             <div className="grid md:grid-cols-2 gap-4 text-sm">
                                 <div>
@@ -548,48 +629,17 @@ export default function CreateRPPPage() {
                                             </Button>
                                         )}
                                         {!streaming.isStreaming && streaming.content && (
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    onClick={() => generateAndExport({
-                                                        mapel: formData.subject,
-                                                        topik: formData.title,
-                                                        kelas: formData.grade,
-                                                        document_type: 'rpp',
-                                                        format: 'pdf',
-                                                        kurikulum: 'merdeka',
-                                                        alokasi_waktu: parseInt(formData.duration) || 2,
-                                                        content: streaming.content
-                                                    })}
-                                                    disabled={exportLoading}
-                                                    variant="outline"
-                                                    className="h-8 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                                >
-                                                    {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                                    PDF
-                                                </Button>
-                                                <Button
-                                                    onClick={() => generateAndExport({
-                                                        mapel: formData.subject,
-                                                        topik: formData.title,
-                                                        kelas: formData.grade,
-                                                        document_type: 'rpp',
-                                                        format: 'docx',
-                                                        kurikulum: 'merdeka',
-                                                        alokasi_waktu: parseInt(formData.duration) || 2,
-                                                        content: streaming.content
-                                                    })}
-                                                    disabled={exportLoading}
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
-                                                >
-                                                    {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                                    Word (Docx)
-                                                </Button>
-                                            </div>
+                                            <DocumentExportPanel
+                                                content={streaming.content}
+                                                title={formData.title || 'RPP'}
+                                                documentType="rpp"
+                                                contentRef={contentRef}
+                                            />
                                         )}
                                     </div>
 
                                     {/* Markdown Preview */}
-                                    <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                                    <div ref={contentRef} className="bg-card rounded-lg border border-border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
                                         <MarkdownViewer content={streaming.content} />
                                     </div>
                                 </div>
@@ -597,10 +647,32 @@ export default function CreateRPPPage() {
                                 {/* Action Buttons (Show only when not streaming and content exists) */}
                                 {!streaming.isStreaming && streaming.content && (
                                     <div className="flex justify-end gap-3">
-                                        <Button variant="outline">
-                                            Copy Text
-                                        </Button>
-                                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                                        <Button
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                            onClick={async () => {
+                                                try {
+                                                    await create({
+                                                        judul: formData.title,
+                                                        materi_pokok: formData.materi,
+                                                        kelas: formData.grade,
+                                                        alokasi_waktu: parseInt(formData.duration) * 40 || 90,
+                                                        tujuan_pembelajaran: formData.tujuanPembelajaran.split('\n').filter(Boolean),
+                                                        kegiatan: {
+                                                            pendahuluan: [{ fase: 'pendahuluan', durasi: 10, langkah: formData.pendahuluan.split('\n').filter(Boolean) }],
+                                                            inti: [{ fase: 'inti', durasi: 60, langkah: formData.inti.split('\n').filter(Boolean) }],
+                                                            penutup: [{ fase: 'penutup', durasi: 10, langkah: formData.penutup.split('\n').filter(Boolean) }],
+                                                        },
+                                                        konten_lengkap: { markdown: streaming.content },
+                                                        status: 'draft'
+                                                    });
+                                                    incrementLocalGenerationCount();
+                                                    router.push('/dashboard/rpp');
+                                                } catch (err) {
+                                                    console.error('Failed to save:', err);
+                                                    setError('Gagal menyimpan ke database');
+                                                }
+                                            }}
+                                        >
                                             <Save size={18} className="mr-2" />
                                             Simpan ke Database
                                         </Button>

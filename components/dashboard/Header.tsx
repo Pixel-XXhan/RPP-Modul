@@ -176,9 +176,17 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-muted transition-colors"
                     >
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                            {(profile?.nama || user?.email || 'P').charAt(0).toUpperCase()}
-                        </div>
+                        {user?.user_metadata?.avatar_url ? (
+                            <img
+                                src={user.user_metadata.avatar_url}
+                                alt="Profile"
+                                className="w-8 h-8 rounded-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
+                                {(profile?.nama || user?.email || 'P').charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <ChevronDown size={14} className="text-muted-foreground hidden md:block" />
                     </button>
 
@@ -226,23 +234,25 @@ export function DashboardHeader({ onMobileMenuToggle }: DashboardHeaderProps) {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Click outside to close */}
-            {(showUserMenu || showNotifications) && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => {
-                        setShowUserMenu(false);
-                        setShowNotifications(false);
-                    }}
-                />
-            )}
+            {
+                (showUserMenu || showNotifications) && (
+                    <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => {
+                            setShowUserMenu(false);
+                            setShowNotifications(false);
+                        }}
+                    />
+                )
+            }
 
             <LogoutConfirmDialog
                 open={showLogoutDialog}
                 onOpenChange={setShowLogoutDialog}
             />
-        </header>
+        </header >
     );
 }
