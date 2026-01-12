@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -22,7 +22,7 @@ import {
     Download
 } from "lucide-react";
 import { useATP } from "@/hooks/useATP";
-import { useExport } from "@/hooks/useExport";
+import { DocumentExportPanel } from "@/components/ui/DocumentExportPanel";
 import { api } from "@/lib/api";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ import {
 export default function CreateATPPage() {
     const router = useRouter();
     const { generateWithStreaming, streaming } = useATP();
-    const { generateAndExport, loading: exportLoading } = useExport();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -376,45 +376,16 @@ export default function CreateATPPage() {
                                     </Button>
                                 )}
                                 {!streaming.isStreaming && streaming.content && (
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={() => generateAndExport({
-                                                mapel: formData.subject,
-                                                topik: formData.title,
-                                                kelas: formData.grade,
-                                                document_type: 'atp',
-                                                format: 'pdf',
-                                                kurikulum: 'merdeka',
-                                                content: streaming.content
-                                            })}
-                                            disabled={exportLoading}
-                                            variant="outline"
-                                            className="h-8 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                        >
-                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                            PDF
-                                        </Button>
-                                        <Button
-                                            onClick={() => generateAndExport({
-                                                mapel: formData.subject,
-                                                topik: formData.title,
-                                                kelas: formData.grade,
-                                                document_type: 'atp',
-                                                format: 'docx',
-                                                kurikulum: 'merdeka',
-                                                content: streaming.content
-                                            })}
-                                            disabled={exportLoading}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
-                                        >
-                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                            Word (Docx)
-                                        </Button>
-                                    </div>
+                                    <DocumentExportPanel
+                                        content={streaming.content}
+                                        title={formData.title || 'ATP'}
+                                        documentType="atp"
+                                        contentRef={contentRef}
+                                    />
                                 )}
                             </div>
 
-                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                            <div ref={contentRef} className="bg-card rounded-lg border border-border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
                                 <MarkdownViewer content={streaming.content} />
                             </div>
                         </div>

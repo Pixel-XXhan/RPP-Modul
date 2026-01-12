@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Plus, Trash2, Save, Loader2, CheckCircle2, ListChecks, PenLine, Download, AlertCircle } from "lucide-react";
 import { useAsesmen } from "@/hooks/useAsesmen";
-import { useExport } from "@/hooks/useExport";
+import { DocumentExportPanel } from "@/components/ui/DocumentExportPanel";
 import { api } from "@/lib/api";
 import { MarkdownViewer } from "@/components/ui/MarkdownViewer";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ import {
 
 export default function CreateAsesmenPage() {
     const { generateWithStreaming, streaming } = useAsesmen();
-    const { generateAndExport, loading: exportLoading } = useExport();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [asesmenType, setAsesmenType] = useState<"formatif" | "sumatif">("formatif");
 
@@ -292,46 +292,17 @@ export default function CreateAsesmenPage() {
                                     </Button>
                                 )}
                                 {!streaming.isStreaming && streaming.content && (
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={() => generateAndExport({
-                                                mapel: formData.subject,
-                                                topik: formData.title,
-                                                kelas: formData.grade,
-                                                document_type: 'asesmen',
-                                                format: 'pdf',
-                                                kurikulum: 'merdeka',
-                                                content: streaming.content
-                                            })}
-                                            disabled={exportLoading}
-                                            variant="outline"
-                                            className="h-8 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                        >
-                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                            PDF
-                                        </Button>
-                                        <Button
-                                            onClick={() => generateAndExport({
-                                                mapel: formData.subject,
-                                                topik: formData.title,
-                                                kelas: formData.grade,
-                                                document_type: 'asesmen',
-                                                format: 'docx',
-                                                kurikulum: 'merdeka',
-                                                content: streaming.content
-                                            })}
-                                            disabled={exportLoading}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg"
-                                        >
-                                            {exportLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} className="mr-2" />}
-                                            Word (Docx)
-                                        </Button>
-                                    </div>
+                                    <DocumentExportPanel
+                                        content={streaming.content}
+                                        title={formData.title || 'Asesmen'}
+                                        documentType="asesmen"
+                                        contentRef={contentRef}
+                                    />
                                 )}
                             </div>
 
                             {/* Markdown Preview */}
-                            <div className="bg-white rounded-lg border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
+                            <div ref={contentRef} className="bg-card rounded-lg border border-border p-6 shadow-sm min-h-[200px] max-h-[600px] overflow-y-auto custom-scrollbar">
                                 <MarkdownViewer content={streaming.content} />
                             </div>
                         </div>
