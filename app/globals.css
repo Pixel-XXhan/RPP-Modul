@@ -122,7 +122,16 @@
     --chart-3: #0D9488;
     --chart-4: #FCD34D;
     --chart-5: #022C22;
+
+    /* Semantic colors for consistent theming */
+    --success: #10b981;
+    --success-foreground: #ffffff;
+    --info: #3b82f6;
+    --info-foreground: #ffffff;
+    --warning: #f59e0b;
+    --warning-foreground: #000000;
   }
+
 
   .dark {
     --background: #0a0a0a;
@@ -158,6 +167,14 @@
     --chart-3: #06b6d4;
     --chart-4: #f59e0b;
     --chart-5: #8b5cf6;
+
+    /* Semantic colors for dark mode */
+    --success: #34d399;
+    --success-foreground: #022C22;
+    --info: #60a5fa;
+    --info-foreground: #1e3a5f;
+    --warning: #fbbf24;
+    --warning-foreground: #422006;
   }
 }
 

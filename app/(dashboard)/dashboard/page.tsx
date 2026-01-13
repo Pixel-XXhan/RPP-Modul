@@ -203,21 +203,29 @@ export default function DashboardPage() {
 
     const userName = profile?.nama || user?.email?.split('@')[0] || 'Pengguna';
 
+    // Calculate actual trend from data
+    const getTrend = () => {
+        if (loading || !stats) return undefined;
+        if (stats.totalDocuments > 0) return `${stats.totalDocuments} dokumen`;
+        return undefined;
+    };
+
     const statsData = [
-        { label: "Total Dokumen", value: stats?.totalDocuments?.toString() || "0", icon: FileText, trend: loading ? undefined : "+3 minggu ini", color: "bg-primary" },
-        { label: "Modul Ajar", value: stats?.modulAjar?.toString() || "0", icon: BookOpen, color: "bg-emerald-500" },
-        { label: "RPP", value: stats?.rpp?.toString() || "0", icon: ListTree, color: "bg-blue-500" },
-        { label: "Asesmen", value: stats?.asesmen?.toString() || "0", icon: ClipboardList, color: "bg-amber-500" },
+        { label: "Total Dokumen", value: stats?.totalDocuments?.toString() || "0", icon: FileText, trend: getTrend(), color: "bg-primary" },
+        { label: "Modul Ajar", value: stats?.modulAjar?.toString() || "0", icon: BookOpen, color: "bg-[var(--success)]" },
+        { label: "RPP", value: stats?.rpp?.toString() || "0", icon: ListTree, color: "bg-[var(--info)]" },
+        { label: "Asesmen", value: stats?.asesmen?.toString() || "0", icon: ClipboardList, color: "bg-[var(--warning)]" },
     ];
 
     const quickActions = [
-        { label: "Modul Ajar", description: "Buat modul ajar baru dengan AI", href: "/dashboard/modul-ajar/create", icon: BookOpen, color: "bg-emerald-500" },
-        { label: "RPP", description: "Susun rencana pembelajaran", href: "/dashboard/rpp/create", icon: FileText, color: "bg-blue-500" },
-        { label: "ATP", description: "Buat alur tujuan pembelajaran", href: "/dashboard/atp/create", icon: Target, color: "bg-violet-500" },
-        { label: "Silabus", description: "Generate silabus semester", href: "/dashboard/silabus/create", icon: ListTree, color: "bg-rose-500" },
-        { label: "Asesmen", description: "Buat soal dan rubrik", href: "/dashboard/asesmen/create", icon: ClipboardList, color: "bg-amber-500" },
-        { label: "Bank Soal", description: "Kelola koleksi soal", href: "/dashboard/bank-soal", icon: Library, color: "bg-teal-500" },
+        { label: "Modul Ajar", description: "Buat modul ajar baru dengan AI", href: "/dashboard/modul-ajar/create", icon: BookOpen, color: "bg-[var(--success)]" },
+        { label: "RPP", description: "Susun rencana pembelajaran", href: "/dashboard/rpp/create", icon: FileText, color: "bg-[var(--info)]" },
+        { label: "ATP", description: "Buat alur tujuan pembelajaran", href: "/dashboard/atp/create", icon: Target, color: "bg-violet-500 dark:bg-violet-400" },
+        { label: "Silabus", description: "Generate silabus semester", href: "/dashboard/silabus/create", icon: ListTree, color: "bg-rose-500 dark:bg-rose-400" },
+        { label: "Asesmen", description: "Buat soal dan rubrik", href: "/dashboard/asesmen/create", icon: ClipboardList, color: "bg-[var(--warning)]" },
+        { label: "Bank Soal", description: "Kelola koleksi soal", href: "/dashboard/bank-soal", icon: Library, color: "bg-teal-500 dark:bg-teal-400" },
     ];
+
 
     return (
         <div className="space-y-8">

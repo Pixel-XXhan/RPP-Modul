@@ -119,6 +119,15 @@ export default function CreateRPPPage() {
             // Use hooks for generation which handles OpenRouter/Gemini routing
             await generateWithStreaming(payload);
 
+            // Trigger notification on successful generation
+            if (typeof window !== 'undefined' && (window as any).addNotification) {
+                (window as any).addNotification(
+                    'RPP Berhasil Dibuat',
+                    `${formData.title} - ${formData.subject}`,
+                    'success'
+                );
+            }
+
         } catch (err: any) {
             console.error("Generation failed:", err);
             // Error is handled by apiError from hook, but we can also set local error if needed
@@ -334,11 +343,40 @@ export default function CreateRPPPage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={true}
-                                className="gap-2 opacity-50 cursor-not-allowed"
-                                title="Fitur ini akan tersedia segera"
+                                onClick={async () => {
+                                    if (!formData.title || !formData.subject || !formData.grade) {
+                                        setError('Lengkapi Informasi Dasar terlebih dahulu');
+                                        return;
+                                    }
+                                    setIsAutoGenerating('tujuan');
+                                    setError(null);
+                                    try {
+                                        const response = await api.post<{ data?: { suggestions?: string[]; raw?: string } }>('/api/v2/suggestions/tujuan-pembelajaran', {
+                                            mapel: formData.subject,
+                                            topik: formData.title,
+                                            kelas: formData.grade,
+                                            kurikulum: 'merdeka'
+                                        });
+                                        if (response.data?.raw) {
+                                            handleInputChange('tujuanPembelajaran', response.data.raw);
+                                        } else if (response.data?.suggestions) {
+                                            handleInputChange('tujuanPembelajaran', response.data.suggestions.join('\n'));
+                                        }
+                                    } catch (err) {
+                                        console.error('Auto-generate failed:', err);
+                                        setError('Gagal generate tujuan pembelajaran. Silakan coba lagi.');
+                                    } finally {
+                                        setIsAutoGenerating(null);
+                                    }
+                                }}
+                                disabled={isAutoGenerating !== null || !formData.title || !formData.subject || !formData.grade}
+                                className="gap-2"
                             >
-                                <Wand2 size={16} /> Coming Soon
+                                {isAutoGenerating === 'tujuan' ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
+                                ) : (
+                                    <><Wand2 size={16} /> Generate dengan AI</>
+                                )}
                             </Button>
                         </div>
 
@@ -389,11 +427,43 @@ export default function CreateRPPPage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={true}
-                                className="gap-2 opacity-50 cursor-not-allowed"
-                                title="Fitur ini akan tersedia segera"
+                                onClick={async () => {
+                                    if (!formData.title || !formData.subject || !formData.grade) {
+                                        setError('Lengkapi Informasi Dasar terlebih dahulu');
+                                        return;
+                                    }
+                                    setIsAutoGenerating('kegiatan');
+                                    setError(null);
+                                    try {
+                                        const response = await api.post<{ data?: { suggestions?: { pendahuluan?: string[]; inti?: string[]; penutup?: string[] } } }>('/api/v2/suggestions/kegiatan-pembelajaran', {
+                                            mapel: formData.subject,
+                                            topik: formData.title,
+                                            kelas: formData.grade,
+                                            kurikulum: 'merdeka',
+                                            tujuan: formData.tujuanPembelajaran,
+                                            durasi: parseInt(formData.duration) || 80
+                                        });
+                                        if (response.data?.suggestions) {
+                                            const s = response.data.suggestions;
+                                            if (s.pendahuluan) handleInputChange('pendahuluan', Array.isArray(s.pendahuluan) ? s.pendahuluan.join('\n') : String(s.pendahuluan));
+                                            if (s.inti) handleInputChange('inti', Array.isArray(s.inti) ? s.inti.join('\n') : String(s.inti));
+                                            if (s.penutup) handleInputChange('penutup', Array.isArray(s.penutup) ? s.penutup.join('\n') : String(s.penutup));
+                                        }
+                                    } catch (err) {
+                                        console.error('Auto-generate failed:', err);
+                                        setError('Gagal generate kegiatan pembelajaran. Silakan coba lagi.');
+                                    } finally {
+                                        setIsAutoGenerating(null);
+                                    }
+                                }}
+                                disabled={isAutoGenerating !== null || !formData.title || !formData.subject || !formData.grade}
+                                className="gap-2"
                             >
-                                <Wand2 size={16} /> Coming Soon
+                                {isAutoGenerating === 'kegiatan' ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
+                                ) : (
+                                    <><Wand2 size={16} /> Generate dengan AI</>
+                                )}
                             </Button>
                         </div>
 
