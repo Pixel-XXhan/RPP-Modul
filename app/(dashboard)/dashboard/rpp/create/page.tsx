@@ -334,37 +334,11 @@ export default function CreateRPPPage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={async () => {
-                                    if (!formData.title || !formData.subject || !formData.grade) {
-                                        setError('Lengkapi Informasi Dasar terlebih dahulu');
-                                        return;
-                                    }
-                                    setIsAutoGenerating('tujuan');
-                                    try {
-                                        const response = await api.post<{ data?: { suggestions?: string[] } }>('/api/v2/suggestions/tujuan-pembelajaran', {
-                                            mapel: formData.subject,
-                                            topik: formData.title,
-                                            kelas: formData.grade,
-                                            kurikulum: 'merdeka'
-                                        });
-                                        const data = response as { data?: { suggestions?: string[] } };
-                                        if (data.data?.suggestions) {
-                                            handleInputChange('tujuanPembelajaran', data.data.suggestions.join('\n'));
-                                        }
-                                    } catch (err) {
-                                        console.error('Auto-generate failed:', err);
-                                    } finally {
-                                        setIsAutoGenerating(null);
-                                    }
-                                }}
-                                disabled={isAutoGenerating !== null}
-                                className="gap-2"
+                                disabled={true}
+                                className="gap-2 opacity-50 cursor-not-allowed"
+                                title="Fitur ini akan tersedia segera"
                             >
-                                {isAutoGenerating === 'tujuan' ? (
-                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
-                                ) : (
-                                    <><Wand2 size={16} /> Generate dengan AI</>
-                                )}
+                                <Wand2 size={16} /> Coming Soon
                             </Button>
                         </div>
 
@@ -415,41 +389,11 @@ export default function CreateRPPPage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={async () => {
-                                    if (!formData.title || !formData.subject || !formData.grade) {
-                                        setError('Lengkapi Informasi Dasar terlebih dahulu');
-                                        return;
-                                    }
-                                    setIsAutoGenerating('kegiatan');
-                                    try {
-                                        const response = await api.post<{ data?: { suggestions?: { pendahuluan?: string | string[]; inti?: string | string[]; penutup?: string | string[] } } }>('/api/v2/suggestions/kegiatan-pembelajaran', {
-                                            mapel: formData.subject,
-                                            topik: formData.title,
-                                            kelas: formData.grade,
-                                            kurikulum: 'merdeka',
-                                            tujuan: formData.tujuanPembelajaran
-                                        });
-                                        const data = response as { data?: { suggestions?: { pendahuluan?: string | string[]; inti?: string | string[]; penutup?: string | string[] } } };
-                                        if (data.data?.suggestions) {
-                                            const s = data.data.suggestions;
-                                            if (s.pendahuluan) handleInputChange('pendahuluan', Array.isArray(s.pendahuluan) ? s.pendahuluan.join('\n') : s.pendahuluan);
-                                            if (s.inti) handleInputChange('inti', Array.isArray(s.inti) ? s.inti.join('\n') : s.inti);
-                                            if (s.penutup) handleInputChange('penutup', Array.isArray(s.penutup) ? s.penutup.join('\n') : s.penutup);
-                                        }
-                                    } catch (err) {
-                                        console.error('Auto-generate failed:', err);
-                                    } finally {
-                                        setIsAutoGenerating(null);
-                                    }
-                                }}
-                                disabled={isAutoGenerating !== null}
-                                className="gap-2"
+                                disabled={true}
+                                className="gap-2 opacity-50 cursor-not-allowed"
+                                title="Fitur ini akan tersedia segera"
                             >
-                                {isAutoGenerating === 'kegiatan' ? (
-                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
-                                ) : (
-                                    <><Wand2 size={16} /> Generate dengan AI</>
-                                )}
+                                <Wand2 size={16} /> Coming Soon
                             </Button>
                         </div>
 

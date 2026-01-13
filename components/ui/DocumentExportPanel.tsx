@@ -107,110 +107,244 @@ export function DocumentExportPanel({
         setIsExporting('pdf');
         try {
             const { default: jsPDF } = await import('jspdf');
-            const { default: html2canvas } = await import('html2canvas');
 
-            if (contentRef?.current) {
-                const canvas = await html2canvas(contentRef.current, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                });
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
 
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
+            const maxWidth = pageWidth - margin * 2;
+            let yPosition = margin;
 
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                const imgX = (pdfWidth - imgWidth * ratio) / 2;
-                const imgY = 10;
-
-                // Add multiple pages if content is tall
-                let heightLeft = imgHeight * ratio;
-                let position = 0;
-
-                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-                heightLeft -= pdfHeight;
-
-                while (heightLeft > 0) {
-                    position = heightLeft - imgHeight * ratio;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
-                    heightLeft -= pdfHeight;
+            // Helper function to add text with word wrap
+            const addText = (text: string, fontSize: number, isBold: boolean = false) => {
+                pdf.setFontSize(fontSize);
+                if (isBold) {
+                    pdf.setFont('helvetica', 'bold');
+                } else {
+                    pdf.setFont('helvetica', 'normal');
                 }
 
-                const filename = `${title.replace(/\s+/g, '_')}_${documentType}_${new Date().toISOString().split('T')[0]}.pdf`;
-                pdf.save(filename);
+                const lines = pdf.splitTextToSize(text, maxWidth);
+                const lineHeight = fontSize * 0.4;
+
+                for (const line of lines) {
+                    if (yPosition + lineHeight > pageHeight - margin) {
+                        pdf.addPage();
+                        yPosition = margin;
+                    }
+                    pdf.text(line, margin, yPosition);
+                    yPosition += lineHeight;
+                }
+            };
+
+            // Add title
+            pdf.setFontSize(18);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(title, margin, yPosition);
+            yPosition += 12;
+
+            // Add date
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Dibuat: ${new Date().toLocaleDateString('id-ID')}`, margin, yPosition);
+            yPosition += 8;
+
+            // Draw separator line
+            pdf.setDrawColor(0, 0, 0);
+            pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 8;
+
+            // Parse and render content
+            const lines = content.split('\n');
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+
+                if (!trimmedLine) {
+                    yPosition += 4;
+                    continue;
+                }
+
+                // Remove markdown bold/italic markers for text
+                const cleanText = trimmedLine
+                    .replace(/\*\*([^*]+)\*\*/g, '$1')
+                    .replace(/\*([^*]+)\*/g, '$1')
+                    .replace(/`([^`]+)`/g, '$1')
+                    .replace(/^#+\s*/, '');
+
+                if (trimmedLine.startsWith('# ')) {
+                    yPosition += 4;
+                    addText(cleanText, 16, true);
+                    yPosition += 2;
+                } else if (trimmedLine.startsWith('## ')) {
+                    yPosition += 3;
+                    addText(cleanText, 14, true);
+                    yPosition += 2;
+                } else if (trimmedLine.startsWith('### ')) {
+                    yPosition += 2;
+                    addText(cleanText, 12, true);
+                    yPosition += 1;
+                } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+                    addText('• ' + trimmedLine.slice(2), 11);
+                } else if (trimmedLine.match(/^\d+\.\s/)) {
+                    addText(trimmedLine, 11);
+                } else {
+                    addText(cleanText, 11);
+                }
             }
+
+            const filename = `${title.replace(/\s+/g, '_')}_${documentType}_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(filename);
         } catch (err) {
             console.error('PDF export failed:', err);
+            alert('Gagal export PDF. Silakan coba Print ke PDF.');
         } finally {
             setIsExporting(null);
         }
     };
 
+
     const handleExportDOCX = async () => {
         setIsExporting('docx');
         try {
-            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = await import('docx');
             const { saveAs } = await import('file-saver');
 
             // Parse markdown to create DOCX paragraphs
             const lines = content.split('\n');
             const children: any[] = [];
 
+            // Add document title
+            children.push(new Paragraph({
+                children: [new TextRun({ text: title, bold: true, size: 32 })],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            }));
+
+            // Add date
+            children.push(new Paragraph({
+                children: [new TextRun({ text: `Dibuat: ${new Date().toLocaleDateString('id-ID')}`, size: 20, italics: true })],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 400 }
+            }));
+
+            // Add separator
+            children.push(new Paragraph({
+                border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' } },
+                spacing: { after: 200 }
+            }));
+
+            // Helper to parse inline bold/italic
+            const parseInlineFormatting = (text: string): any[] => {
+                const runs: any[] = [];
+                let remaining = text;
+
+                // Simple regex to find **bold** and *italic* patterns
+                const pattern = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+                let lastIndex = 0;
+                let match;
+
+                while ((match = pattern.exec(text)) !== null) {
+                    // Add text before the match
+                    if (match.index > lastIndex) {
+                        runs.push(new TextRun({ text: text.slice(lastIndex, match.index), size: 22 }));
+                    }
+
+                    // Add formatted text
+                    if (match[2]) {
+                        // Bold
+                        runs.push(new TextRun({ text: match[2], bold: true, size: 22 }));
+                    } else if (match[3]) {
+                        // Italic
+                        runs.push(new TextRun({ text: match[3], italics: true, size: 22 }));
+                    } else if (match[4]) {
+                        // Code
+                        runs.push(new TextRun({ text: match[4], font: 'Courier New', size: 20 }));
+                    }
+
+                    lastIndex = match.index + match[0].length;
+                }
+
+                // Add remaining text
+                if (lastIndex < text.length) {
+                    runs.push(new TextRun({ text: text.slice(lastIndex), size: 22 }));
+                }
+
+                return runs.length > 0 ? runs : [new TextRun({ text, size: 22 })];
+            };
+
             for (const line of lines) {
-                if (line.startsWith('# ')) {
+                const trimmedLine = line.trim();
+
+                if (trimmedLine.startsWith('# ')) {
                     children.push(new Paragraph({
-                        text: line.slice(2),
+                        text: trimmedLine.slice(2),
                         heading: HeadingLevel.HEADING_1,
+                        spacing: { before: 300, after: 150 }
                     }));
-                } else if (line.startsWith('## ')) {
+                } else if (trimmedLine.startsWith('## ')) {
                     children.push(new Paragraph({
-                        text: line.slice(3),
+                        text: trimmedLine.slice(3),
                         heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 240, after: 120 }
                     }));
-                } else if (line.startsWith('### ')) {
+                } else if (trimmedLine.startsWith('### ')) {
                     children.push(new Paragraph({
-                        text: line.slice(4),
+                        text: trimmedLine.slice(4),
                         heading: HeadingLevel.HEADING_3,
+                        spacing: { before: 180, after: 100 }
                     }));
-                } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
                     children.push(new Paragraph({
-                        text: line.slice(2),
+                        children: parseInlineFormatting(trimmedLine.slice(2)),
                         bullet: { level: 0 },
+                        spacing: { after: 60 }
                     }));
-                } else if (line.match(/^\d+\.\s/)) {
+                } else if (trimmedLine.match(/^\d+\.\s/)) {
+                    const textContent = trimmedLine.replace(/^\d+\.\s/, '');
                     children.push(new Paragraph({
-                        text: line.replace(/^\d+\.\s/, ''),
+                        children: parseInlineFormatting(textContent),
                         numbering: { reference: 'default-numbering', level: 0 },
+                        spacing: { after: 60 }
                     }));
-                } else if (line.startsWith('**') && line.endsWith('**')) {
+                } else if (trimmedLine) {
                     children.push(new Paragraph({
-                        children: [new TextRun({ text: line.slice(2, -2), bold: true })],
+                        children: parseInlineFormatting(trimmedLine),
+                        spacing: { after: 100 }
                     }));
-                } else if (line.trim()) {
-                    // Clean up markdown formatting
-                    const cleanText = line
-                        .replace(/\*\*([^*]+)\*\*/g, '$1')
-                        .replace(/\*([^*]+)\*/g, '$1')
-                        .replace(/`([^`]+)`/g, '$1');
-                    children.push(new Paragraph({ text: cleanText }));
                 } else {
-                    children.push(new Paragraph({ text: '' }));
+                    children.push(new Paragraph({ text: '', spacing: { after: 100 } }));
                 }
             }
 
             const doc = new Document({
+                numbering: {
+                    config: [{
+                        reference: 'default-numbering',
+                        levels: [{
+                            level: 0,
+                            format: 'decimal',
+                            text: '%1.',
+                            alignment: AlignmentType.START
+                        }]
+                    }]
+                },
                 sections: [{
-                    properties: {},
+                    properties: {
+                        page: {
+                            margin: {
+                                top: 1440,
+                                right: 1440,
+                                bottom: 1440,
+                                left: 1440
+                            }
+                        }
+                    },
                     children
                 }]
             });
@@ -220,10 +354,12 @@ export function DocumentExportPanel({
             saveAs(blob, filename);
         } catch (err) {
             console.error('DOCX export failed:', err);
+            alert('Gagal export DOCX. Silakan coba lagi.');
         } finally {
             setIsExporting(null);
         }
     };
+
 
     return (
         <div className={cn("flex flex-wrap gap-2", className)}>
