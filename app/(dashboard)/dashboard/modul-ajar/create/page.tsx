@@ -130,6 +130,18 @@ export default function CreateModulAjarPage() {
                 kegiatan_pembelajaran: formData.inti,
                 model: formData.model
             };
+
+            // Use hooks for generation which handles OpenRouter/Gemini routing
+            await generateWithStreaming(payload);
+
+            // Trigger notification on successful generation
+            if (typeof window !== 'undefined' && (window as any).addNotification) {
+                (window as any).addNotification(
+                    'Modul Ajar Berhasil Dibuat',
+                    `${formData.title} - ${formData.subject}`,
+                    'success'
+                );
+            }
         } catch (err: any) {
             console.error("Generation failed:", err);
         } finally {

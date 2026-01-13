@@ -75,7 +75,7 @@ export default function BantuanPage() {
                     placeholder="Cari bantuan..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-lg"
+                    className="w-full pl-12 pr-4 py-4 bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-lg text-foreground placeholder:text-muted-foreground"
                 />
             </div>
 
@@ -94,9 +94,9 @@ export default function BantuanPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="bg-white rounded-2xl border border-neutral-200 p-5 hover:shadow-lg hover:border-primary/20 transition-all group"
+                            className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg hover:border-primary/20 transition-all group"
                         >
-                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3 group-hover:bg-primary group-hover:text-white transition-colors">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                                 <Icon size={24} />
                             </div>
                             <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{link.title}</h3>
@@ -111,17 +111,17 @@ export default function BantuanPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-white rounded-2xl border border-neutral-200 overflow-hidden"
+                className="bg-card rounded-2xl border border-border overflow-hidden"
             >
-                <div className="p-6 border-b border-neutral-100">
+                <div className="p-6 border-b border-border">
                     <h2 className="text-lg font-bold text-foreground">Pertanyaan Umum (FAQ)</h2>
                 </div>
-                <div className="divide-y divide-neutral-100">
+                <div className="divide-y divide-border">
                     {faqs.map((faq, index) => (
                         <div key={index} className="group">
                             <button
                                 onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                                className="w-full flex items-center justify-between p-6 text-left hover:bg-neutral-50 transition-colors"
+                                className="w-full flex items-center justify-between p-6 text-left hover:bg-muted/50 transition-colors"
                             >
                                 <span className="font-medium text-foreground pr-4">{faq.question}</span>
                                 <ChevronDown
@@ -149,7 +149,7 @@ export default function BantuanPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-white rounded-2xl border border-neutral-200 p-6"
+                className="bg-card rounded-2xl border border-border p-6"
             >
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-bold text-foreground">Video Tutorial</h2>
@@ -162,9 +162,9 @@ export default function BantuanPage() {
                         <a
                             key={index}
                             href="#"
-                            className="flex items-center gap-4 p-4 rounded-xl hover:bg-neutral-50 transition-colors group"
+                            className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors group"
                         >
-                            <div className="w-16 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <div className="w-16 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                                 <Video size={20} />
                             </div>
                             <div className="flex-1">
@@ -182,7 +182,7 @@ export default function BantuanPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-white rounded-2xl border border-neutral-200 p-6"
+                className="bg-card rounded-2xl border border-border p-6"
             >
                 <div className="flex items-center gap-2 mb-6">
                     <Keyboard size={20} className="text-primary" />
@@ -190,12 +190,12 @@ export default function BantuanPage() {
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                     {shortcuts.map((shortcut, index) => (
-                        <div key={index} className="flex items-center justify-between py-3 px-4 bg-neutral-50 rounded-xl">
+                        <div key={index} className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-xl">
                             <span className="text-muted-foreground">{shortcut.action}</span>
                             <div className="flex items-center gap-1">
                                 {shortcut.keys.map((key, i) => (
                                     <span key={i}>
-                                        <kbd className="px-2 py-1 bg-white border border-neutral-200 rounded text-xs font-mono text-foreground">
+                                        <kbd className="px-2 py-1 bg-background border border-border rounded text-xs font-mono text-foreground">
                                             {key}
                                         </kbd>
                                         {i < shortcut.keys.length - 1 && <span className="text-muted-foreground mx-1">+</span>}
@@ -212,12 +212,12 @@ export default function BantuanPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="bg-gradient-to-r from-primary to-primary-light rounded-2xl p-8 text-center text-white"
+                className="bg-gradient-to-r from-primary to-emerald-500 rounded-2xl p-8 text-center text-primary-foreground"
             >
-                <Sparkles size={32} className="mx-auto mb-4 text-accent" />
+                <Sparkles size={32} className="mx-auto mb-4 text-amber-300" />
                 <h2 className="text-xl font-bold font-serif mb-2">Butuh Bantuan Lebih?</h2>
-                <p className="text-white/80 mb-6">Tim support kami siap membantu Anda 24/7</p>
-                <Button className="bg-white text-primary hover:bg-neutral-100 font-semibold rounded-xl">
+                <p className="opacity-80 mb-6">Tim support kami siap membantu Anda 24/7</p>
+                <Button className="bg-background text-foreground hover:bg-background/90 font-semibold rounded-xl">
                     <MessageCircle size={18} className="mr-2" />
                     Hubungi Support
                 </Button>
@@ -225,3 +225,4 @@ export default function BantuanPage() {
         </div>
     );
 }
+

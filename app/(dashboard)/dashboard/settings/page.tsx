@@ -112,9 +112,9 @@ export default function SettingsPage() {
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-green-50 border border-green-200 rounded-xl"
+                    className="p-3 bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-xl"
                 >
-                    <p className="text-sm text-green-800 flex items-center gap-2">
+                    <p className="text-sm text-[var(--success)] flex items-center gap-2">
                         <Check size={16} /> {successMessage}
                     </p>
                 </motion.div>
