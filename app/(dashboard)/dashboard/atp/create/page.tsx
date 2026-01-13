@@ -122,6 +122,15 @@ export default function CreateATPPage() {
 
             await generateWithStreaming(payload);
 
+            // Trigger notification on successful generation
+            if (typeof window !== 'undefined' && (window as any).addNotification) {
+                (window as any).addNotification(
+                    'ATP Berhasil Dibuat',
+                    `${formData.title}`,
+                    'success'
+                );
+            }
+
         } catch (err: any) {
             console.error(err);
             setError("Gagal membuat ATP. Silakan coba lagi.");

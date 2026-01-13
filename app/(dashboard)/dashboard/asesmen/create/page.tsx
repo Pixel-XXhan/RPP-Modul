@@ -96,6 +96,15 @@ export default function CreateAsesmenPage() {
 
             await generateWithStreaming(payload);
 
+            // Trigger notification on successful generation
+            if (typeof window !== 'undefined' && (window as any).addNotification) {
+                (window as any).addNotification(
+                    'Asesmen Berhasil Dibuat',
+                    `${formData.title} - ${asesmenType}`,
+                    'success'
+                );
+            }
+
         } catch (error) {
             console.error(error);
         } finally {

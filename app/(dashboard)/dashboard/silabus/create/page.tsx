@@ -112,6 +112,15 @@ export default function CreateSilabusPage() {
 
             await generateWithStreaming(payload);
 
+            // Trigger notification on successful generation
+            if (typeof window !== 'undefined' && (window as any).addNotification) {
+                (window as any).addNotification(
+                    'Silabus Berhasil Dibuat',
+                    `${formData.title} - ${formData.subject}`,
+                    'success'
+                );
+            }
+
         } catch (error) {
             console.error(error);
         } finally {
